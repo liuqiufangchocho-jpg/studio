@@ -184,9 +184,9 @@ const CATEGORIES = {
     id: 'weather', name: '天气', nameEn: 'Weather', icon: '🌦️',
     items: [
       { id: 'sunny', hanzi: '晴天', pinyin: 'qíng tiān', emoji: '☀️', en: 'sunny', isCore: true, isCCG: true },
-      { id: 'rainy', hanzi: '雨天', pinyin: 'yǔ tiān', emoji: '🌧️', en: 'rainy', isCore: true, isCCG: true },
+     { id: 'rainy', hanzi: '下雨', pinyin: 'xià yǔ', emoji: '🌧️', en: 'rainy', isCore: true, isCCG: true },
       { id: 'cloudy', hanzi: '阴天', pinyin: 'yīn tiān', emoji: '☁️', en: 'cloudy', isCore: true, isCCG: true },
-      { id: 'snowy', hanzi: '雪天', pinyin: 'xuě tiān', emoji: '❄️', en: 'snowy', isCore: true, isCCG: true },
+     { id: 'snowy', hanzi: '下雪', pinyin: 'xià xuě', emoji: '❄️', en: 'snowy', isCore: true, isCCG: true },
       { id: 'windy', hanzi: '刮风', pinyin: 'guā fēng', emoji: '🌀', en: 'windy', isCore: true, isCCG: true },
       { id: 'thunder', hanzi: '打雷', pinyin: 'dǎ léi', emoji: '🌩️', en: 'thunder', isCore: true, isCCG: false },
       { id: 'lightning', hanzi: '闪电', pinyin: 'shǎn diàn', emoji: '⚡', en: 'lightning', isCore: true, isCCG: false },
