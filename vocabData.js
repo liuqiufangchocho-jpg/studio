@@ -213,7 +213,7 @@ const CATEGORIES = {
       { id: 'glasses', hanzi: '眼镜', pinyin: 'yǎn jìng', emoji: '👓', en: 'glasses', isCore: true, isCCG: false },
       { id: 'scarf', hanzi: '围巾', pinyin: 'wéi jīn', emoji: '🧣', en: 'scarf', isCore: true, isCCG: false },
       { id: 'gloves', hanzi: '手套', pinyin: 'shǒu tào', emoji: '🧤', en: 'gloves', isCore: true, isCCG: false },
-      { id: 'swimsuit', hanzi: '泳衣', pinyin: 'yǒng yī', emoji: '👙', en: 'swimsuit', isCore: true, isCCG: false },
+      { id: 'swimsuit', hanzi: '泳衣', pinyin: 'yǒng yī', emoji: '🩱', en: 'swimsuit', isCore: true, isCCG: false },
       { id: 'clothes', hanzi: '衣服', pinyin: 'yī fu', emoji: '👚', en: 'clothes', isCore: true, isCCG: false },
       { id: 'school_uniform', hanzi: '校服', pinyin: 'xiào fú', emoji: '👔', img: './school_uniform.png', en: 'school uniform', isCore: true, isCCG: true },
       { id: 'long_robe', hanzi: '长袍', pinyin: 'cháng páo', emoji: '👘', img: './robe.png', en: 'robe', isCore: true, isCCG: true },
