@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Chinese Learning Studio</title>
+    
+    <link href="https://fonts.cdnfonts.com/css/digital-7-mono" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Righteous&display=swap" rel="stylesheet">
+    
+    <script src="vocabData.js"></script>
+    <script src="bgmData.js"></script>
+
+    <script>
+        window.CATEGORIES = window.CATEGORIES || (typeof CATEGORIES !== 'undefined' ? CATEGORIES : {
+            dailylife: {
+                id: 'dailylife', name: '日常生活', nameEn: 'Daily Life', icon: '⏰',
+                items: [
+                    { id: 'eat', hanzi: '吃饭', pinyin: 'chī fàn', emoji: '🍚', en: 'eat' },
+                    { id: 'wakeup', hanzi: '起床', pinyin: 'qǐ chuáng', emoji: '🛏️', en: 'wake up' }
+                ]
+            },
+            colors: {
+                id: 'colors', name: '颜色', nameEn: 'Colors', icon: '🎨',
+                items: [
+                    { id: 'red', hanzi: '红色', pinyin: 'hóng sè', emoji: '🔴', en: 'red' },
+                    { id: 'yellow', hanzi: '黄色', pinyin: 'huáng sè', emoji: '🟡', en: 'yellow' },
+                    { id: 'blue', hanzi: '蓝色', pinyin: 'lán sè', emoji: '🔵', en: 'blue' },
+                    { id: 'green', hanzi: '绿色', pinyin: 'lǜ sè', emoji: '🟢', en: 'green' },
+                    { id: 'pink', hanzi: '粉色', pinyin: 'fěn sè', emoji: '🌸', en: 'pink' },
+                    { id: 'white', hanzi: '白色', pinyin: 'bái sè', emoji: '⚪', en: 'white' }
+                ]
+            }
+        });
+
+        let currentBgmAudio = null;
+
+        function startBGM() {
+            if (typeof window.BGM_LIBRARY === 'undefined' || !Array.isArray(window.BGM_LIBRARY) || window.BGM_LIBRARY.length === 0) return;
+            if (currentBgmAudio) { currentBgmAudio.pause(); }
+            const randomBgm = window.BGM_LIBRARY[Math.floor(Math.random() * window.BGM_LIBRARY.length)];
+            currentBgmAudio = new Audio(randomBgm);
+            currentBgmAudio.loop = true;
+            currentBgmAudio.volume = 0.15; 
+            currentBgmAudio.play().catch(function(e) { console.log("Audio autoplay blocked", e); });
+        }
+
+        function stopBGM() {
+            if (currentBgmAudio) {
+                currentBgmAudio.pause();
+                currentBgmAudio.currentTime = 0;
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary-color: #4A90E2;      
+            --secondary-color: #7EB6FF;    
+            --text-dark: #2C3E50;          
+            --text-medium: #7F8C8D;        
+            --bg-light: #F0F8FF;           
+            --border-color: #D6E4F0;       
+            --btn-hover: #357ABD;          
+        }
+
+        .hidden { display: none !important; }
+        body { font-family: 'Arial', 'Microsoft YaHei', sans-serif; background-color: var(--bg-light); margin: 0; padding: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; color: var(--text-dark); }
+        #app-container { width: 100%; max-width: 1100px; padding: 20px; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; }
+
+        .view-section { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; overflow-y: auto; position: relative; }
+        .view-section.active { display: flex; }
+
+        .btn-common { padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; font-family: inherit; font-weight: bold; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-common:hover { background-color: var(--btn-hover); }
+        .btn-common:active { transform: scale(0.98); }
+        .btn-common:disabled { background-color: #B0C4DE; cursor: not-allowed; transform: none; }
+        .btn-outline { background-color: white; color: var(--primary-color); border: 2px solid var(--primary-color); }
+        .btn-outline:hover { background-color: #E6F2FF; color: var(--btn-hover); border-color: var(--btn-hover); }
+        
+        .header-bar { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 900px; margin-bottom: 20px; flex-shrink: 0; }
+        .header-title { font-size: 1.5em; font-weight: bold; color: var(--text-dark); margin: 0; text-align: center; }
+        
+        .main-title-container { text-align: center; margin-bottom: 30px; flex-shrink: 0; }
+        .main-title-sub { color: #FACC15; font-size: 1.2em; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .main-title { color: var(--primary-color); margin: 0; font-size: 2.2em; font-weight: 900; letter-spacing: 1px;}
+
+        .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; width: 100%; max-width: 900px; padding-bottom: 20px;}
+        .module-card { background: white; padding: 25px 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.1); text-align: center; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+        .module-card:hover { border-color: var(--primary-color); transform: translateY(-3px); box-shadow: 0 6px 15px rgba(74, 144, 226, 0.2); }
+        .module-icon { font-size: 3.5em; line-height: 1; }
+        .module-title { font-size: 1.3em; color: var(--text-dark); font-weight: bold; }
+
+        .game-select-grid-new { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; max-width: 1000px; padding-bottom: 30px; margin: 0 auto; box-sizing: border-box; }
+        .game-card-new { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: transform 0.2s, border-color 0.2s; border: 2px solid var(--border-color); min-height: 160px;}
+        .game-card-new:hover { border-color: var(--primary-color); transform: translateY(-5px); }
+        .game-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .game-emoji { font-size: 4rem; line-height: 1; }
+        .game-name { font-size: 1.6rem; font-weight: 900; color: var(--text-dark); text-align: right; line-height: 1.1; max-width: 60%; word-break: break-word; }
+        .game-desc { font-size: 1.3rem; color: var(--text-medium); line-height: 1.4; text-align: left; margin-top: 15px;}
+        
+        @media (max-width: 900px) { .game-select-grid-new { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .game-select-grid-new { grid-template-columns: 1fr; } }
+
+        .word-select-container { display: flex; flex-direction: column; width: 100%; max-width: 900px; height: 100%; overflow: hidden; }
+        .available-words-area { flex: 0 1 auto; max-height: 45vh; overflow-y: auto; padding: 5px 15px 5px 5px; margin-bottom: 25px; }
+        .selected-words-area { flex-shrink: 0; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+        .selected-words-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: var(--text-dark); font-weight: bold; }
+        
+        .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 12px; width: 100%; }
+        .vocab-item { background: white; padding: 12px 5px; border-radius: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 2px solid var(--border-color); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+        .vocab-item.selectable { cursor: pointer; }
+        .vocab-item.selectable:hover { border-color: var(--secondary-color); transform: translateY(-2px); }
+        .vocab-item.selected { border-color: var(--primary-color); background-color: #F4F9FF; box-shadow: 0 0 0 1px var(--primary-color); }
+        
+        .vocab-pinyin { font-size: 0.9em; color: var(--text-medium); font-family: Arial, sans-serif;}
+        .vocab-hanzi { font-size: 1.5em; font-weight: bold; color: var(--text-dark); font-family: 'KaiTi', '楷体', sans-serif;}
+        .vocab-emoji { font-size: 2.2em; line-height: 1; }
+        .vocab-en { font-size: 0.8em; color: var(--primary-color); font-weight: bold; font-family: Arial, sans-serif; }
+
+        .game-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
+        .game-modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.2); border: 1px solid var(--border-color); min-width: 300px;}
+        .game-timer-display { font-family: 'Courier New', monospace; font-size: 1.5em; font-weight: bold; color: var(--primary-color); background: #E6F2FF; padding: 5px 15px; border-radius: 20px; border: 2px solid var(--secondary-color); }
+
+        @keyframes flashHint {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.6; filter: drop-shadow(0 0 5px rgba(123, 174, 127, 0.5)); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ----- GAME STYLES ----- */
+        #archery-container { width: 100%; height: 100%; position: relative; background-color: #0b0914; overflow: hidden; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif; color: #ecf0f1; touch-action: none; }
+        .archery-ambient-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 15% 50%, rgba(72, 29, 136, 0.4), transparent 50%), radial-gradient(circle at 85% 30%, rgba(255, 42, 95, 0.15), transparent 50%), radial-gradient(circle at 50% 100%, rgba(10, 19, 45, 1), transparent 70%); z-index: 0; pointer-events: none; }
+        .archery-noise-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E"); z-index: 1; pointer-events: none; }
+        #archery-gameCanvas { display: block; position: relative; z-index: 5; width: 100%; height: 100%; }
+        #archery-ui-layer { position: absolute; bottom: 20px; left: 20px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; width: calc(100% - 40px); align-items: flex-end;}
+        .archery-glass-box { font-family: 'Righteous', 'Arial', sans-serif; font-size: 26px; line-height: 1; color: #fff; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); padding: 12px 25px; border-radius: 50px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-shadow: 0 0 20px rgba(255,255,255,0.5); display: flex; align-items: center; gap: 8px;}
+        .archery-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 3, 10, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .archery-modal-box { background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%); backdrop-filter: blur(24px); padding: 50px 40px; border-radius: 32px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.4); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .archery-btn { padding: 15px 40px; font-size: 24px; color: white; background: linear-gradient(135deg, #ff2a5f 0%, #ff003c 100%); border: none; border-radius: 100px; cursor: pointer; margin-top: 10px; font-weight: bold;}
+
+        .memory-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #ffffff; border-radius: 15px; box-shadow: 0 8px 25px rgba(74, 144, 226, 0.1); width: 100%; max-width: 600px; box-sizing: border-box; }
+        .memory-card { aspect-ratio: 1 / 1.1; perspective: 1000px; cursor: pointer; position: relative; }
+        .memory-card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.5, 1.2); border-radius: 10px; }
+        .memory-card.flipped .memory-card-inner { transform: rotateY(180deg); }
+        .memory-card-front, .memory-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid rgba(0, 0, 0, 0.05); box-sizing: border-box; }
+        .memory-card-front { background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); color: white; font-size: 2.5em; font-weight: bold; }
+        .memory-card-back { background-color: #fff; transform: rotateY(180deg); gap: 2px; }
+        .memory-matched { animation: matchPop 0.5s forwards; pointer-events: none; }
+        @keyframes matchPop { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 1; border-color: var(--primary-color); } 100% { transform: scale(0); opacity: 0; } }
+
+        .ttt-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; background: var(--primary-color); border-radius: 15px; width: 100%; max-width: 450px; box-sizing: border-box; margin: 0 auto; box-shadow: 0 8px 25px rgba(74, 144, 226, 0.2); }
+        .ttt-cell { aspect-ratio: 1 / 1.1; background-color: white; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; position: relative; overflow: hidden; }
+        .ttt-cell:hover { background-color: #F4F9FF; }
+        .ttt-cell.ttt-x::after { content: '❌'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 4em; background: rgba(255,255,255,0.85); }
+        .ttt-cell.ttt-o::after { content: '⭕'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 4em; background: rgba(255,255,255,0.85); }
+        .ttt-turn-indicator { font-size: 1.5em; font-weight: bold; margin-bottom: 15px; color: var(--text-dark); background: white; padding: 10px 20px; border-radius: 20px; border: 2px solid var(--border-color); display:flex; align-items: center; gap: 10px;}
+
+        .snake-main-layout { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; width: 100%; flex-grow: 1; min-height: 0; }
+        @media (min-width: 768px) { .snake-main-layout { flex-direction: row; gap: 30px; } }
+        #snake-game-container { position: relative; background-color: #ffffff; border-radius: 20px; box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.8); }
+        #snakeCanvas { display: block; touch-action: none; }
+        #snake-score-panel { background-color: #ffffff; border-radius: 16px; padding: 15px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06); border: 1px solid rgba(226, 232, 240, 0.6); }
+        .snake-score-label { font-size: 1.2rem; margin-bottom: 4px; font-weight: bold; color: #475569;}
+        .snake-score-display { font-size: 2.5rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; color: #1e293b; }
+        .snake-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 10; }
+        .snake-pill-btn { border-radius: 9999px; font-weight: 600; transition: all 0.3s ease; border: none; cursor: pointer; color: white;}
+        .snake-btn-blue { background-color: #60A5FA; } .snake-btn-coral { background-color: #FB7185; } .snake-btn-green { background-color: #34D399; } .snake-btn-gray { background-color: #94A3B8; }
+
+        .linkup-screen-container { display: flex; flex-direction: row; align-items: center; justify-content: center; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-color: #C1D5A4; gap: 20px; overflow: hidden; padding: 20px; box-sizing: border-box; }
+        @media (max-width: 768px) {
+            .linkup-screen-container { flex-direction: column; gap: 10px; }
+            .linkup-external-stats { flex-direction: row !important; width: 90% !important; height: auto !important; justify-content: center; gap: 10px !important; }
+            .linkup-stat-card { flex: 1; padding: 5px !important; }
+            #linkup-score-box { font-size: 24px !important; }
+            #linkup-timer-box { font-size: 24px !important; }
+        }
+        .linkup-game-wrapper { width: 85vmin; height: calc(85vmin * 1.2); max-width: 600px; max-height: 80vh; background: #FDF5E6; border: clamp(4px, 1vw, 8px) solid white; border-radius: 30px; padding: 10px; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .linkup-game-area { flex: 1; position: relative; background: rgba(255,255,255,0.4); border-radius: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(0, 1fr)); grid-gap: 8px; padding: 8px; z-index: 10; min-height: 0; }
+        .linkup-external-stats { display: flex; flex-direction: column; gap: 20px; width: 140px; flex-shrink: 0; box-sizing: border-box; }
+        .linkup-stat-card { background: white; padding: 12px 10px; border-radius: 18px; text-align: center; box-shadow: 0 4px 0px #7BAE7F; border: 2px solid #7BAE7F; box-sizing: border-box;}
+        .linkup-stat-label { display: block; font-size: 16px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        #linkup-timer-box { font-family: 'Digital-7 Mono', monospace; font-size: 24px; color: #FF0000; background: #1a1a1a; padding: 6px 0; border-radius: 8px; text-align: center; }
+        #linkup-score-box { font-size: 28px; font-weight: 900; color: #8D6E63; }
+        .linkup-tile { width: 100%; height: 100%; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: clamp(24px, min(6vw, 6vh), 50px); cursor: pointer; box-shadow: 0 4px 0px #e0e0e0; user-select: none; border: 3px solid transparent; box-sizing: border-box; transition: transform 0.1s; overflow: hidden; }
+        .linkup-tile.selected { background: #F9E79F; transform: scale(0.9); box-shadow: none; border: 3px solid #7BAE7F; }
+        .linkup-overlay { position: absolute; inset: 0; background: rgba(253, 245, 230, 0.98); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 22px; padding: 20px; }
+        #linkup-line-canvas { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+
+        /* Match 2 Styles */
+        .match2-main-layout { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: clamp(10px, 3vw, 30px); width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 100%); padding: 20px; box-sizing: border-box; overflow: hidden; }
+        .match2-vertical-title { writing-mode: vertical-rl; font-weight: 900; color: #7BAE7F; font-size: 40px; letter-spacing: 5px; margin: 0; }
+        .match2-game-container { width: 85vmin; height: calc(85vmin * 5 / 6); max-width: 800px; max-height: 75vh; background: rgba(255, 255, 255, 0.95); padding: clamp(8px, 2vw, 20px); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: clamp(4px, 1vw, 8px) solid #7BAE7F; position: relative; display: flex; flex-direction: column; box-sizing: border-box; }
+        .match2-sidebar { display: flex; flex-direction: column; gap: 15px; color: #8D6E63; flex-shrink: 0; }
+        .match2-side-box { background: white; padding: clamp(8px, 1.5vw, 15px); border-radius: 15px; border: 3px solid #7BAE7F; min-width: clamp(80px, 15vw, 120px); text-align: center; }
+        .match2-side-label { font-size: clamp(16px, 3vw, 22px); font-weight: bold; margin-bottom: 5px; color: #555; }
+        #match2-timer { font-family: 'Digital-7 Mono', monospace; font-size: clamp(20px, 4vw, 32px); background: #222; color: #00ff41; padding: 5px; border-radius: 6px; }
+        #match2-score { font-size: clamp(20px, 4vw, 32px); font-weight: bold; }
+        .match2-grid { flex: 1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr)); grid-gap: clamp(5px, 1.2vw, 12px); background: #F9E79F; padding: clamp(6px, 1.5vw, 15px); border-radius: 15px; min-height: 0; box-sizing: border-box; }
+        .match2-tile { width: 100%; height: 100%; background: white; border-radius: clamp(6px, 1.5vw, 15px); display: flex; align-items: center; justify-content: center; font-size: clamp(20px, min(6vw, 6vh), 55px); cursor: pointer; box-shadow: 0 4px 0 #cbd5e0; user-select: none; border: 2px solid transparent; box-sizing: border-box; min-height: 0; overflow: hidden; transition: transform 0.1s; }
+        
+        .match2-tile.selected { 
+            background: #fff; 
+            transform: scale(1.02); 
+            z-index: 2; 
+            box-shadow: 0 0 15px #b026ff, inset 0 0 10px #b026ff; 
+            border: 3px solid #b026ff; 
+        }
+        
+        .match2-tile.hidden { visibility: hidden; pointer-events: none; opacity: 0; transform: scale(0.4); }
+        .match2-tile.correct { animation: match2-celebrate 0.4s ease-out forwards; }
+        @keyframes match2-celebrate { 0% { transform: scale(1); background: #C8E6C9; } 50% { transform: scale(1.3) rotate(15deg); } 100% { transform: scale(0); opacity: 0; } }
+        .match2-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.96); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 18px; z-index: 100; padding: 20px; box-sizing: border-box; }
+        #match2-result { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 15px; }
+        #match2-result.active { display: flex; }
+        
+        @media (max-width: 800px) {
+            .match2-main-layout { flex-direction: column; gap: 10px; padding-bottom: 20px; }
+            .match2-vertical-title { writing-mode: horizontal-tb; font-size: 30px; letter-spacing: 2px; }
+            .match2-sidebar { flex-direction: row; width: 100%; justify-content: center; gap: 10px; }
+            .match2-side-box { flex: 1; max-width: 140px; min-width: auto; }
+            .match2-game-container { width: 95vw; }
+        }
+
+        .ho-layout { display: flex; flex-direction: row; width: 100%; height: 100%; overflow: hidden; background: #fff; position: relative; }
+        .ho-sidebar { width: 280px; background: #f8f9fa; border-right: 2px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; overflow-y: auto; z-index: 20; }
+        .ho-board { flex: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, #FFB6C1, #87CEFA, #98FB98); user-select: none; }
+        .ho-item { position: absolute; font-size: clamp(30px, 5vw, 55px); cursor: pointer; transition: transform 0.2s; user-select: none; width: 60px; height: 60px; margin-left: -30px; margin-top: -30px; display: flex; align-items: center; justify-content: center; }
+        .ho-item.found-anim { animation: hoPopOut 0.5s ease forwards; pointer-events: none; }
+        .ho-item.hint-anim { animation: hoPulseGlow 1.5s infinite; z-index: 50 !important; }
+        @keyframes hoPopOut { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+        @keyframes hoPulseGlow { 0% { filter: drop-shadow(0 0 5px yellow) drop-shadow(0 0 10px red); } 50% { filter: drop-shadow(0 0 15px yellow) drop-shadow(0 0 20px red); } 100% { filter: drop-shadow(0 0 5px yellow) drop-shadow(0 0 10px red); } }
+        .ho-target-list { display: flex; flex-direction: column; gap: 12px; flex: 1; margin-top: 15px; }
+        .ho-target-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: white; border: 1px solid var(--border-color); border-radius: 10px; }
+        .ho-target-item.completed { opacity: 0.5; filter: grayscale(100%); background: #f0f0f0; }
+        .ho-target-emoji { font-size: 2.2em; margin-right: 12px; }
+        .ho-target-hanzi { font-size: 1.3em; font-weight: bold; }
+        .ho-target-pinyin { font-size: 0.8em; color: var(--text-medium); }
+        .ho-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.95); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        @media (max-width: 768px) {
+            .ho-layout { flex-direction: column; }
+            .ho-sidebar { width: 100%; height: auto; max-height: 220px; flex-direction: column; border-right: none; border-bottom: 2px solid var(--border-color); padding: 10px; }
+            .ho-target-list { flex-direction: row; gap: 10px; overflow-x: auto; overflow-y: hidden; margin-top: 5px; }
+            .ho-target-item { flex-direction: column; min-width: 90px; padding: 8px; justify-content: center; text-align: center; }
+            .ho-target-emoji { margin-right: 0; margin-bottom: 5px; }
+            .ho-sidebar-header { display: none; }
+        }
+
+        #monopoly-container { width: 100%; height: 100%; display: flex; flex-direction: column; background: #f0f4f8; position: relative; overflow: hidden; font-family: 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;}
+        #monopoly-top-bar { width: 100%; min-height: 100px; display: flex; justify-content: center; align-items: center; gap: clamp(15px, 4vw, 50px); background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 10; flex-shrink: 0;}
+        #monopoly-dice-box { font-size: clamp(48px, 6vw, 64px); cursor: pointer; user-select: none; }
+        #monopoly-turn-icon { font-size: clamp(40px, 5vw, 60px); width: clamp(60px, 8vw, 80px); height: clamp(60px, 8vw, 80px); display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #eee; }
+        #monopoly-game-wrapper { position: relative; width: 100%; flex-grow: 1; background: #fff; overflow: hidden; }
+        #monopoly-gameCanvas { width: 100%; height: 100%; display: block; }
+        .monopoly-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 20px; box-sizing: border-box;}
+        #monopoly-start-screen { display: flex; position: absolute; inset: 0; z-index: 300; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at top left, rgba(255, 235, 59, 0.55), transparent 34%), radial-gradient(circle at bottom right, rgba(30, 144, 255, 0.28), transparent 36%), #f8fbff; box-sizing: border-box;}
+        .monopoly-start-card { width: min(920px, 94vw); background: white; border-radius: 34px; padding: 34px; text-align: center; box-shadow: 0 22px 70px rgba(45, 55, 72, 0.18); border: 1px solid rgba(15, 23, 42, 0.06); box-sizing: border-box;}
+        .monopoly-start-title { margin: 0 0 15px 0; font-size: clamp(32px, 5vw, 44px); font-weight: 900; }
+        .monopoly-vehicle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 16px; margin: 24px 0 18px; }
+        .monopoly-vehicle-card { border: 3px solid transparent; border-radius: 24px; padding: 20px 10px; background: #f8fafc; cursor: pointer; transition: transform 0.16s ease, border-color 0.16s ease; min-height: 145px; display: flex; flex-direction: column; align-items: center; justify-content: center;}
+        .monopoly-vehicle-card.selected { border-color: #ffb300; background: #fff8e1; }
+        .monopoly-vehicle-emoji { font-size: 58px; margin-bottom: 12px; }
+        .monopoly-vehicle-name { color: #37474f; font-size: 17px; font-weight: 800; }
+        .monopoly-quiz-card { background: white; color: #333; padding: clamp(20px, 4vw, 40px); border-radius: 30px; width: 400px; max-width: 90%; }
+        .monopoly-quiz-emoji { font-size: 80px; margin: 10px 0; }
+        .monopoly-quiz-pinyin { font-size: 24px; color: #666; }
+        .monopoly-quiz-hanzi { font-size: 48px; font-weight: bold; margin-bottom: 20px; }
+        .monopoly-judge-btns { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        #monopoly-win-overlay { display: none; position: absolute; inset: 0; background: radial-gradient(circle, #ffeb3b, #fbc02d); z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #monopoly-win-car { font-size: 150px; margin: 20px; line-height: 1; }
+        #monopoly-fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        .aq-quiz-box { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; }
+        .aq-question-card { background: #f1f8e9; padding: 30px; border-radius: 20px; border: 3px solid #8bc34a; margin-bottom: 30px; text-align: center; width: 100%; box-sizing: border-box;}
+        .aq-question-text { display: flex; align-items: center; justify-content: center; gap: 15px; font-family: 'KaiTi', '楷体', serif; font-size: 2.5rem; color: var(--text-dark);}
+        .aq-ruby-container { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+        .aq-pinyin { font-size: 1rem; color: #ff5722; font-family: sans-serif; font-weight: bold; }
+        .aq-audio-btn { font-size: 2.5rem; cursor: pointer; background: none; border: none; transition: transform 0.2s; padding: 0;}
+        .aq-audio-btn:hover { transform: scale(1.1); }
+        .aq-options-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; width: 100%; min-height: 120px; }
+        .aq-option-btn { padding: 10px 20px; background: white; border: 4px solid #ddd; border-radius: 20px; cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 0 #ddd; flex: 1; min-width: 100px; max-width: 140px; display: flex; align-items: center; justify-content: center; }
+        .aq-option-btn:hover { transform: translateY(-2px); }
+        .aq-option-btn.correct { border-color: #8bc34a; background: #e8f5e9; box-shadow: 0 6px 0 #8bc34a; }
+        .aq-option-btn.wrong { border-color: #ff5252; background: #ffebee; box-shadow: 0 6px 0 #ff5252; animation: shake 0.4s; }
+        .aq-stars-container { font-size: 2rem; margin: 25px 0; color: #ffca28; letter-spacing: 4px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="view-menu" class="view-section active">
+        <div class="main-title-container">
+            <div class="main-title-sub">Teacher Liu's</div>
+            <h1 class="main-title">Chinese Learning Studio</h1>
+        </div>
+        <div class="module-grid" id="module-list-container"></div>
+    </div>
+
+    <div id="view-game-select" class="view-section">
+        <div class="header-bar">
+            <button class="btn-common btn-outline" id="btn-back-from-select">Back</button>
+            <h2 class="header-title" id="select-module-title"></h2>
+            <div style="width: 80px;"></div> 
+        </div>
+        
+        <div class="game-select-grid-new">
+            <div class="game-card-new" id="btn-play-archery">
+                <div class="game-card-top"><span class="game-emoji">🏹</span><span class="game-name">Archery Game</span></div>
+                <div class="game-desc">Aim and shoot the moving targets.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-audioquiz">
+                <div class="game-card-top"><span class="game-emoji">🎧</span><span class="game-name">Audio Quiz</span></div>
+                <div class="game-desc">Listen and select the correct answer.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-hidden">
+                <div class="game-card-top"><span class="game-emoji">🔍</span><span class="game-name">Hidden Object</span></div>
+                <div class="game-desc">Search and find the target items.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-linkup">
+                <div class="game-card-top"><span class="game-emoji">🔗</span><span class="game-name">Linkup Game</span></div>
+                <div class="game-desc">Connect as many identical items as possible.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-match2">
+                <div class="game-card-top"><span class="game-emoji">🍒</span><span class="game-name">Match 2</span></div>
+                <div class="game-desc">Find match pairs of identical cards.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-memory">
+                <div class="game-card-top"><span class="game-emoji">🎴</span><span class="game-name">Memory Match</span></div>
+                <div class="game-desc">Flip the cards to find match pairs.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-monopoly">
+                <div class="game-card-top"><span class="game-emoji">🎲</span><span class="game-name">Monopoly Game</span></div>
+                <div class="game-desc">Roll the dice and race to the finish line.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-snake">
+                <div class="game-card-top"><span class="game-emoji">🐍</span><span class="game-name">Snake Game</span></div>
+                <div class="game-desc">Control the snake to eat items.</div>
+            </div>
+            <div class="game-card-new" id="btn-play-tictactoe">
+                <div class="game-card-top"><span class="game-emoji">⭕</span><span class="game-name">Tic Tac Toe</span></div>
+                <div class="game-desc">Get three in a row to win the game.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-word-select" class="view-section">
+        <div class="word-select-container">
+            <div class="header-bar">
+                <button class="btn-common btn-outline" id="btn-back-from-word-select">Back</button>
+                <h2 class="header-title"><div style="font-size:2rem;font-weight:900;line-height:1.1;">Select Words</div><div style="font-size:0.95rem;font-weight:600;color:var(--text-medium);line-height:1.3;">Please select 2-10 words.</div></h2>
+                <div style="width: 80px;"></div> 
+            </div>
+
+            <div class="available-words-area">
+                <div class="vocab-grid" id="available-vocab-container"></div>
+            </div>
+
+            <div class="selected-words-area">
+                <div class="selected-words-header">
+                    <span><span id="selected-count-display">0</span>/10</span>
+                    <button class="btn-common" id="btn-start-selected-game" disabled style="font-size: 1.5rem; padding: 10px 30px;">Start</button>
+                </div>
+                <div class="vocab-grid" id="selected-vocab-container" style="min-height: 120px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-game" class="view-section" style="padding: 0;"></div>
+</div>
+
+<script>
+    let modulesArray = [];
+    let currentModuleData = null;
+    let currentTargetGame = ''; 
+    let selectedWords = [];
+
+    window.addEventListener('DOMContentLoaded', function() {
+        try {
+            let safeCategories = null;
+            if (typeof window.CATEGORIES !== 'undefined') { safeCategories = window.CATEGORIES; } 
+            else if (typeof CATEGORIES !== 'undefined') { safeCategories = CATEGORIES; }
+
+            if (safeCategories) {
+                if (Array.isArray(safeCategories)) { modulesArray = safeCategories; } 
+                else { modulesArray = Object.values(safeCategories); }
+            }
+
+            if (modulesArray.length > 0) { renderMainMenu(); }
+        } catch (e) {
+            document.body.innerHTML = '<div style="color: red; padding: 20px;">Error</div>';
+        }
+    });
+
+    const views = {
+        menu: document.getElementById('view-menu'),
+        gameSelect: document.getElementById('view-game-select'),
+        wordSelect: document.getElementById('view-word-select'),
+        game: document.getElementById('view-game')
+    };
+
+    function switchView(viewName) {
+        Object.keys(views).forEach(function(key) {
+            if (views[key]) views[key].classList.remove('active');
+        });
+        if (views[viewName]) views[viewName].classList.add('active');
+    }
+
+    function playVocabAudio(item) {
+        if (!item) return;
+        if (item.audio) {
+            try {
+                const audioObj = new Audio(item.audio);
+                audioObj.play().catch(function(e) { fallbackTTS(item.hanzi); });
+            } catch (e) { fallbackTTS(item.hanzi); }
+        } else if (item.hanzi) {
+            fallbackTTS(item.hanzi);
+        }
+    }
+
+    function fallbackTTS(text) {
+        if (!text) return;
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function playTone(freq, duration, type) {
+        type = type || 'sine';
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.start();
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+            osc.stop(ctx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    function playShatterSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            const bufferSize = audioCtx.sampleRate * 0.4;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 5); 
+            }
+            const noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = buffer;
+            const crashFilter = audioCtx.createBiquadFilter();
+            crashFilter.type = 'bandpass';
+            crashFilter.frequency.value = 6000;
+            crashFilter.Q.value = 1.2;
+            const crashGain = audioCtx.createGain();
+            crashGain.gain.setValueAtTime(2.0, now);
+            crashGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            noiseSource.connect(crashFilter); crashFilter.connect(crashGain);
+            crashGain.connect(audioCtx.destination); noiseSource.start(now);
+            
+            for (let i = 0; i < 20; i++) {
+                const osc = audioCtx.createOscillator();
+                osc.type = Math.random() > 0.5 ? 'square' : 'triangle';
+                osc.frequency.setValueAtTime(4000 + Math.random() * 5000, now);
+                const delay = Math.random() * 0.4 + 0.05; 
+                const duration = 0.02 + Math.random() * 0.04;
+                const tGain = audioCtx.createGain();
+                tGain.gain.setValueAtTime(0, now + delay);
+                tGain.gain.linearRampToValueAtTime(0.2, now + delay + 0.005);
+                tGain.gain.exponentialRampToValueAtTime(0.001, now + delay + duration);
+                
+                const tinkleFilter = audioCtx.createBiquadFilter();
+                tinkleFilter.type = 'highpass';
+                tinkleFilter.frequency.value = 3000;
+                
+                osc.connect(tinkleFilter); tinkleFilter.connect(tGain);
+                tGain.connect(audioCtx.destination);
+                osc.start(now + delay); osc.stop(now + delay + duration);
+            }
+        } catch(e) {}
+    }
+
+    function createVocabCardHTML(item, isSelectable, isSelected) {
+    isSelectable = isSelectable || false;
+    isSelected = isSelected || false;
+    const selectableClass = isSelectable ? 'selectable' : '';
+    const selectedClass = isSelected ? 'selected' : '';
+    let visualHTML = '';
+    if (item.img) {
+        visualHTML = `<img src="${item.img}" style="width: 2.2em; height: 2.2em; object-fit: contain;">`;
+    } else {
+        visualHTML = `<div class="vocab-emoji">${item.emoji || '📝'}</div>`;
+    }
+
+    return '<div class="vocab-item ' + selectableClass + ' ' + selectedClass + '" data-id="' + (item.id || '') + '">' +
+           '<div class="vocab-pinyin">' + (item.pinyin || '') + '</div>' +
+           '<div class="vocab-hanzi">' + (item.hanzi || '') + '</div>' +
+           visualHTML +
+           '<div class="vocab-en">' + (item.en || '') + '</div>' +
+           '</div>';
+}
+
+    function renderMainMenu() {
+        const container = document.getElementById('module-list-container');
+        container.innerHTML = '';
+        
+        const moduleOrder = ['Animals','Body Parts','Clothing','Colors','Countries','Daily Life','Electric Device','Family','Food and Beverage','Fruits','Furniture and Stationery','Numbers','Places','Professions','Sports','Subjects','Time','Vegetables','Vehicles','Weather'];
+        const orderedModules = modulesArray.slice().sort(function(a, b) {
+            const nameA = (a && (a.nameEn || a.name || a.title)) ? String(a.nameEn || a.name || a.title) : '';
+            const nameB = (b && (b.nameEn || b.name || b.title)) ? String(b.nameEn || b.name || b.title) : '';
+            const indexA = moduleOrder.indexOf(nameA);
+            const indexB = moduleOrder.indexOf(nameB);
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+        });
+        orderedModules.forEach(function(module) {
+            if (!module || typeof module !== 'object') return;
+            const card = document.createElement('div');
+            card.className = 'module-card';
+            const displayName = module.nameEn || module.name || module.title || 'Unknown'; 
+            // 判断 icon 是否为图片路径（通过是否包含点号 '.' 来简单判断）
+let iconContent = '';
+if (module.icon && module.icon.includes('.')) {
+    iconContent = `<img src="${module.icon}" style="width: 1em; height: 1em; object-fit: contain;">`;
+} else {
+    iconContent = module.icon || '📚';
+}
+
+card.innerHTML = '<div class="module-icon">' + iconContent + '</div>' +
+                 '<div class="module-title">' + displayName + '</div>';
+            card.onclick = function() {
+                currentModuleData = module;
+                document.getElementById('select-module-title').textContent = displayName;
+                
+                const modId = String(module.id || '').toLowerCase();
+                
+                const snakeBtn = document.getElementById('btn-play-snake');
+                const noSnakeModules = ['body_parts', 'countries', 'daily_life', 'family', 'professions'];
+                if (noSnakeModules.indexOf(modId) !== -1) {
+                    if (snakeBtn) snakeBtn.style.display = 'none';
+                } else {
+                    if (snakeBtn) snakeBtn.style.display = 'flex';
+                }
+
+                const archeryBtn = document.getElementById('btn-play-archery');
+                const noArcheryModules = ['animals', 'body_parts', 'clothes', 'countries', 'daily_life', 'family', 'places', 'professions', 'clothing', 'sports', 'vehicles'];
+                if (noArcheryModules.indexOf(modId) !== -1) {
+                    if (archeryBtn) archeryBtn.style.display = 'none';
+                } else {
+                    if (archeryBtn) archeryBtn.style.display = 'flex';
+                }
+
+                switchView('gameSelect');
+            };
+            container.appendChild(card);
+        });
+    }
+
+    document.getElementById('btn-back-from-select').onclick = function() { switchView('menu'); };
+    document.getElementById('btn-play-archery').onclick = function() { currentTargetGame = 'archery'; initWordSelect(); };
+    document.getElementById('btn-play-audioquiz').onclick = function() { currentTargetGame = 'audioquiz'; initWordSelect(); };
+    document.getElementById('btn-play-hidden').onclick = function() { currentTargetGame = 'hidden'; initWordSelect(); };
+    document.getElementById('btn-play-linkup').onclick = function() { currentTargetGame = 'linkup'; initWordSelect(); };
+    document.getElementById('btn-play-match2').onclick = function() { currentTargetGame = 'match2'; initWordSelect(); };
+    document.getElementById('btn-play-memory').onclick = function() { currentTargetGame = 'memory'; initWordSelect(); };
+    document.getElementById('btn-play-monopoly').onclick = function() { currentTargetGame = 'monopoly'; initWordSelect(); };
+    document.getElementById('btn-play-snake').onclick = function() { currentTargetGame = 'snake'; initWordSelect(); };
+    document.getElementById('btn-play-tictactoe').onclick = function() { currentTargetGame = 'tictactoe'; initWordSelect(); };
+
+    document.getElementById('btn-back-from-word-select').onclick = function() { switchView('gameSelect'); };
+
+    function initWordSelect() {
+        selectedWords = [];
+        updateWordSelectUI();
+        switchView('wordSelect');
+    }
+
+    function toggleWordSelection(id) {
+        if (!currentModuleData || !currentModuleData.items) return;
+        let item = null;
+        for (let i = 0; i < currentModuleData.items.length; i++) {
+            if (String(currentModuleData.items[i].id) === String(id)) { item = currentModuleData.items[i]; break; }
+        }
+        if (!item) return;
+        let index = -1;
+        for (let i = 0; i < selectedWords.length; i++) {
+            if (String(selectedWords[i].id) === String(id)) { index = i; break; }
+        }
+        if (index > -1) {
+            selectedWords.splice(index, 1);
+        } else if (selectedWords.length < 10) {  
+            selectedWords.push(item);
+        }
+        updateWordSelectUI();
+    }
+
+function updateWordSelectUI() {
+    if (!currentModuleData || !currentModuleData.items) return;
+
+    function sortWordsForCurrentModule(a, b) {
+        const modId = String(currentModuleData.id || '').toLowerCase();
+        const modName = String(currentModuleData.nameEn || currentModuleData.name || currentModuleData.title || '').toLowerCase();
+
+        if (modId === 'numbers' || modName === 'numbers') {
+            const numberOrder = {
+                'zero': 0,
+                'one': 1,
+                'two': 2,
+                'three': 3,
+                'four': 4,
+                'five': 5,
+                'six': 6,
+                'seven': 7,
+                'eight': 8,
+                'nine': 9,
+                'ten': 10,
+                'hundred': 100
+            };
+
+            const keyA = String(a.en || a.id || '').toLowerCase();
+            const keyB = String(b.en || b.id || '').toLowerCase();
+
+            const orderA = numberOrder.hasOwnProperty(keyA) ? numberOrder[keyA] : 999;
+            const orderB = numberOrder.hasOwnProperty(keyB) ? numberOrder[keyB] : 999;
+
+            return orderA - orderB;
+        }
+
+        if (modId === 'time' || modName === 'time') {
+            const timeOrder = {
+                "1 o'clock": 1,
+                "2 o'clock": 2,
+                "3 o'clock": 3,
+                "4 o'clock": 4,
+                "5 o'clock": 5,
+                "6 o'clock": 6,
+                "7 o'clock": 7,
+                "8 o'clock": 8,
+                "9 o'clock": 9,
+                "10 o'clock": 10,
+                "11 o'clock": 11,
+                "12 o'clock": 12,
+                "early morning": 13,
+                "morning": 14,
+                "afternoon": 15,
+                "evening": 16
+            };
+
+            const keyA = String(a.en || a.id || '').toLowerCase();
+            const keyB = String(b.en || b.id || '').toLowerCase();
+
+            const orderA = timeOrder.hasOwnProperty(keyA) ? timeOrder[keyA] : 999;
+            const orderB = timeOrder.hasOwnProperty(keyB) ? timeOrder[keyB] : 999;
+
+            return orderA - orderB;
+        }
+
+        if (modId === 'family' || modName === 'family') {
+            const familyOrder = {
+                '爸爸': 1,
+                '妈妈': 2,
+                '爷爷': 3,
+                '奶奶': 4,
+                '哥哥': 5,
+                '姐姐': 6,
+                '弟弟': 7,
+                '妹妹': 8,
+                '叔叔': 9,
+                '阿姨': 10,
+                '儿子': 11,
+                '女儿': 12,
+                '孩子': 13,
+                '大家': 14
+            };
+
+            const keyA = String(a.hanzi || '').trim();
+            const keyB = String(b.hanzi || '').trim();
+
+            const orderA = familyOrder.hasOwnProperty(keyA) ? familyOrder[keyA] : 999;
+            const orderB = familyOrder.hasOwnProperty(keyB) ? familyOrder[keyB] : 999;
+
+            return orderA - orderB;
+        }
+
+        return String(a.pinyin || '').localeCompare(String(b.pinyin || ''));
+    }
+
+    const sortedAvailable = currentModuleData.items.slice().sort(sortWordsForCurrentModule);
+    selectedWords.sort(sortWordsForCurrentModule);
+
+    const selectedContainer = document.getElementById('selected-vocab-container');
+    let selHtml = '';
+    for (let i=0; i<selectedWords.length; i++) { selHtml += createVocabCardHTML(selectedWords[i], true, true); }
+    selectedContainer.innerHTML = selHtml;
+
+    const selEls = selectedContainer.querySelectorAll('.vocab-item');
+    for (let i=0; i<selEls.length; i++) {
+        selEls[i].onclick = function() {
+            const id = this.getAttribute('data-id');
+            for (let j = 0; j < selectedWords.length; j++) {
+                if (String(selectedWords[j].id) === String(id)) {
+                    playVocabAudio(selectedWords[j]);
+                    break;
+                }
+            }
+            toggleWordSelection(id);
+        };
+    }
+
+    const startBtn = document.getElementById('btn-start-selected-game');
+    document.getElementById('selected-count-display').textContent = selectedWords.length;
+    startBtn.disabled = !(selectedWords.length >= 2 && selectedWords.length <= 10);
+
+    const availableContainer = document.getElementById('available-vocab-container');
+    let availHtml = '';
+    for (let i=0; i<sortedAvailable.length; i++) {
+        let item = sortedAvailable[i];
+        let isSelected = false;
+        for (let j=0; j<selectedWords.length; j++) { if (String(selectedWords[j].id) === String(item.id)) isSelected = true; }
+        availHtml += createVocabCardHTML(item, true, isSelected);
+    }
+    availableContainer.innerHTML = availHtml;
+
+    const availEls = availableContainer.querySelectorAll('.vocab-item');
+    for (let i=0; i<availEls.length; i++) {
+        availEls[i].onclick = function() {
+            const id = this.getAttribute('data-id');
+            for (let j = 0; j < currentModuleData.items.length; j++) {
+                if (String(currentModuleData.items[j].id) === String(id)) {
+                    playVocabAudio(currentModuleData.items[j]);
+                    break;
+                }
+            }
+            toggleWordSelection(id);
+        };
+    }
+}
+
+    document.getElementById('btn-start-selected-game').onclick = function() {
+        startBGM(); 
+        switchView('game');
+        document.getElementById('view-game').style.padding = '0'; 
+        const exitHandler = function() { stopBGM(); switchView('wordSelect'); };
+
+        if (currentTargetGame === 'monopoly') startMonopolyGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'memory') { document.getElementById('view-game').style.padding = '20px'; startMemoryMatchGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'tictactoe') { document.getElementById('view-game').style.padding = '20px'; startTicTacToeGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'snake') { document.getElementById('view-game').style.padding = '20px'; startSnakeGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'linkup') startLinkupGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'match2') startMatch2Game(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'hidden') startHiddenObjectGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'audioquiz') { document.getElementById('view-game').style.padding = '20px'; startAudioQuizGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'archery') startArcheryGame(selectedWords, 'view-game', exitHandler);
+    };
+
+    // Monopoly
+    function startMonopolyGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div id="monopoly-container">' +
+                '<button class="btn-common btn-outline" id="monopoly-btn-back" style="position: absolute; top: 15px; left: 15px; z-index: 1000; padding: 8px 15px;">Back</button>' +
+                '<div id="monopoly-start-screen">' +
+                    '<div class="monopoly-start-card">' +
+                        '<h2 class="monopoly-start-title" style="color:var(--text-dark);">Monopoly Game</h2>' +
+                        '<p style="color:#64748b;font-size:1.1rem;margin:0 0 15px 0;">Please select 2 to 5 vehicles to start.</p>' +
+                        '<div id="monopoly-vehicle-grid" class="monopoly-vehicle-grid"></div>' +
+                        '<button id="monopoly-start-btn" class="btn-common" disabled style="width:100%; font-size: 1.5rem; padding: 15px;">Start</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="monopoly-top-bar">' +
+                    '<div id="monopoly-turn-icon">🚕</div>' +
+                    '<div id="monopoly-dice-box">🎲</div>' +
+                '</div>' +
+                '<div id="monopoly-game-wrapper"><canvas id="monopoly-gameCanvas"></canvas></div>' +
+                '<div id="monopoly-quiz-overlay" class="monopoly-overlay">' +
+                    '<div id="monopoly-dice-result-text" style="font-size: 40px; margin-bottom: 20px;"></div>' +
+                    '<div class="monopoly-quiz-card">' +
+                        '<div id="monopoly-quiz-pinyin" class="monopoly-quiz-pinyin"></div>' +
+                        '<div id="monopoly-quiz-hanzi" class="monopoly-quiz-hanzi"></div>' +
+                        '<div id="monopoly-quiz-emoji" class="monopoly-quiz-emoji"></div>' +
+                        '<div class="monopoly-judge-btns">' +
+                            '<button class="btn-common" id="monopoly-correct-btn" style="background:#4caf50;font-size:24px;">✅</button>' +
+                            '<button class="btn-common" id="monopoly-wrong-btn" style="background:#f44336;font-size:24px;">❌</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="monopoly-win-overlay" class="monopoly-overlay">' +
+                    '<canvas id="monopoly-fireworks-canvas"></canvas>' +
+                    '<div id="monopoly-win-car">🚕</div>' +
+                    '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                    '<button class="btn-common" id="monopoly-restart-btn" style="font-size:24px; margin-top:20px; z-index:10; padding:15px 30px;">Restart</button>' +
+                '</div>' +
+            '</div>';
+        
+        const canvas = document.getElementById('monopoly-gameCanvas'), ctx = canvas.getContext('2d');
+        const diceBox = document.getElementById('monopoly-dice-box'), turnIcon = document.getElementById('monopoly-turn-icon');
+        const vehicleGrid = document.getElementById('monopoly-vehicle-grid'), startBtn = document.getElementById('monopoly-start-btn');
+        let monopolyVocab = [];
+        for (let i=0; i<vocabList.length; i++) {
+    let cellData = { 
+        h: vocabList[i].hanzi || '', 
+        p: vocabList[i].pinyin || '', 
+        e: vocabList[i].emoji || '📝', 
+        img: vocabList[i].img || null 
+    };
+    if (cellData.img) {
+        let imgObj = new Image();
+        imgObj.src = cellData.img;
+        cellData.imgObj = imgObj;
+    }
+    monopolyVocab.push(cellData);
+}
+        
+        const vehicleOptions = [{ id: 'taxi', icon: '🚕', color: '#FFD700' }, { id: 'green-car', icon: '🚗', color: '#32CD32', filter: 'hue-rotate(90deg)' }, { id: 'blue-car', icon: '🚙', color: '#1E90FF' }, { id: 'red-car', icon: '🚗', color: '#FF4500' }, { id: 'white-car', icon: '🚐', color: '#F8FAFC' }];
+        let selectedVehicleIds = [], players = [], cells = [], turn = 0, gridCount = 21, isBusy = false, lastRollValue = 0, gameStarted = false, animationFrameId = null;
+
+        function buildCells() {
+            cells = [];
+            for (let i = 0; i < gridCount; i++) {
+                const r = Math.floor(i / 7), c = i % 7, x = (r % 2 === 0) ? c * (1600/7) : (6 - c) * (1600/7), y = r * (800/3);
+                cells.push({ index: i, x:x, y:y, w: 1600/7, h: 800/3, data: (i===0||i===gridCount-1) ? null : monopolyVocab[(i-1)%monopolyVocab.length], type: i===0?'START':(i===gridCount-1?'END':'NORMAL') });
+            }
+        }
+        function draw() {
+            if(!ctx) return; ctx.clearRect(0, 0, 1600, 800);
+            if(!gameStarted) return;
+            for(let i=0; i<cells.length; i++) {
+                let cell = cells[i];
+                ctx.strokeStyle = '#eee'; ctx.lineWidth = 2; ctx.strokeRect(cell.x, cell.y, cell.w, cell.h);
+                ctx.fillStyle = cell.type === 'START' ? '#f0f7ff' : (cell.type === 'END' ? '#f6fff7' : '#fffdf0');
+                ctx.fillRect(cell.x + 5, cell.y + 5, cell.w - 10, cell.h - 10);
+                ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+                if(cell.type === 'START') { ctx.font = '70px Arial'; ctx.fillText('🚩', cell.x + cell.w/2, cell.y + 160); }
+                else if(cell.type === 'END') { ctx.font = '70px Arial'; ctx.fillText('🏁', cell.x + cell.w/2, cell.y + 160); }
+                else {
+                    ctx.fillStyle = '#888'; ctx.font = '22px Arial'; ctx.fillText(cell.data.p, cell.x + cell.w/2, cell.y + 45);
+ctx.fillStyle = '#333'; ctx.font = 'bold 36px Arial'; ctx.fillText(cell.data.h, cell.x + cell.w/2, cell.y + 90);
+
+// 判断是否有预加载完成的图片，如果有则绘制图片，否则绘制 emoji
+if (cell.data.imgObj && cell.data.imgObj.complete) {
+    let imgSize = 80;
+    ctx.drawImage(cell.data.imgObj, cell.x + cell.w/2 - imgSize/2, cell.y + 120, imgSize, imgSize);
+} else {
+    ctx.font = '70px Arial'; ctx.fillText(cell.data.e, cell.x + cell.w/2, cell.y + 190);
+}
+                }
+            }
+            for(let idx=0; idx<players.length; idx++) {
+                let p = players[idx];
+                const c = cells[Math.min(Math.max(Math.floor(p.drawPos),0), gridCount-1)];
+                if(!c) continue;
+                const offsetList = players.length >= 4 ? [{x:-44,y:-42},{x:44,y:-42},{x:-44,y:42},{x:44,y:42},{x:0,y:0}] : [{x:-36,y:0},{x:36,y:0},{x:0,y:42}];
+                const offset = offsetList[idx] || {x:0,y:0};
+                ctx.save(); if(p.filter) ctx.filter = p.filter; ctx.font = '75px Arial'; ctx.fillText(p.icon, c.x + c.w/2 + offset.x, c.y + c.h/2 + offset.y + 30); ctx.restore();
+            }
+        }
+        function gameLoop() { draw(); animationFrameId = requestAnimationFrame(gameLoop); }
+        function init() { canvas.width=1600; canvas.height=800; buildCells(); gameLoop(); }
+        
+        for(let vi=0; vi<vehicleOptions.length; vi++) {
+            let v = vehicleOptions[vi];
+            const btn = document.createElement('div'); btn.className = 'monopoly-vehicle-card'; 
+            let fStyle = v.filter ? 'filter:'+v.filter : '';
+            btn.innerHTML = '<div class="monopoly-vehicle-emoji" style="'+fStyle+'">' + v.icon + '</div>';
+            btn.onclick = function() {
+                let idx = selectedVehicleIds.indexOf(v.id);
+                if(idx !== -1) selectedVehicleIds.splice(idx, 1);
+                else if(selectedVehicleIds.length<5) selectedVehicleIds.push(v.id);
+                
+                const allCards = document.querySelectorAll('.monopoly-vehicle-card');
+                for(let ci=0; ci<allCards.length; ci++) {
+                    if(selectedVehicleIds.indexOf(vehicleOptions[ci].id) !== -1) allCards[ci].classList.add('selected');
+                    else allCards[ci].classList.remove('selected');
+                }
+                startBtn.disabled = selectedVehicleIds.length < 2;
+            };
+            vehicleGrid.appendChild(btn);
+        }
+
+        startBtn.onclick = function() {
+            players = [];
+            for(let i=0; i<selectedVehicleIds.length; i++) {
+                for(let j=0; j<vehicleOptions.length; j++) {
+                    if(vehicleOptions[j].id === selectedVehicleIds[i]) {
+                        players.push({ id: vehicleOptions[j].id, icon: vehicleOptions[j].icon, color: vehicleOptions[j].color, filter: vehicleOptions[j].filter, pos:0, drawPos:0 });
+                    }
+                }
+            }
+            gameStarted = true; document.getElementById('monopoly-start-screen').style.display = 'none';
+            turnIcon.innerText = players[0].icon; if(players[0].filter) turnIcon.style.filter = players[0].filter;
+            init();
+        };
+
+        diceBox.onclick = function() {
+            if(isBusy || !gameStarted) return; isBusy = true; diceBox.style.opacity = '0.5';
+            let t = 0; const tmr = setInterval(function() {
+                diceBox.innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][Math.floor(Math.random()*6)]; playTone(300, 0.05); t++;
+                if(t>10) {
+                    clearInterval(tmr); lastRollValue = Math.floor(Math.random()*6)+1; diceBox.innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][lastRollValue-1];
+                    document.getElementById('monopoly-dice-result-text').innerText = players[turn].icon + ' ➔ ' + lastRollValue;
+                    const target = cells[Math.min(players[turn].pos + lastRollValue, gridCount-1)];
+                    document.getElementById('monopoly-quiz-hanzi').innerText = target.type==='START'?'🚩':(target.type==='END'?'🏁':target.data.h);
+                    document.getElementById('monopoly-quiz-pinyin').innerText = target.type==='START'?'':(target.type==='END'?'':target.data.p);
+                    document.getElementById('monopoly-quiz-emoji').innerText = target.type==='START'?'🚩':(target.type==='END'?'🏁':target.data.e);
+                    setTimeout(function() { document.getElementById('monopoly-quiz-overlay').style.display = 'flex'; }, 300);
+                }
+            }, 80);
+        };
+
+        function stepPlayer(player, target) {
+            return new Promise(function(res) {
+                const s = player.drawPos, d = target - s, startT = Date.now();
+                function frame() {
+                    const p = Math.min((Date.now()-startT)/250, 1); player.drawPos = s + d*p;
+                    if(p<1) requestAnimationFrame(frame); else { player.drawPos = target; res(); }
+                }
+                frame();
+            });
+        }
+
+        async function handleJudge(correct) {
+            document.getElementById('monopoly-quiz-overlay').style.display = 'none';
+            if(correct) {
+                for(let i=0; i<lastRollValue; i++) {
+                    if(players[turn].pos >= gridCount-1) break;
+                    players[turn].pos++; await stepPlayer(players[turn], players[turn].pos); playTone(400+i*50, 0.1);
+                }
+                if(players[turn].pos >= gridCount-1) {
+                    document.getElementById('monopoly-win-car').innerText = players[turn].icon;
+                    if(players[turn].filter) document.getElementById('monopoly-win-car').style.filter = players[turn].filter;
+                    document.getElementById('monopoly-win-overlay').style.display = 'flex'; return;
+                }
+            }
+            turn = (turn+1)%players.length; turnIcon.innerText = players[turn].icon;
+            turnIcon.style.filter = players[turn].filter || 'none'; isBusy = false; diceBox.style.opacity = '1'; diceBox.innerText = '🎲';
+        }
+        
+        document.getElementById('monopoly-correct-btn').onclick = function() { handleJudge(true); };
+        document.getElementById('monopoly-wrong-btn').onclick = function() { handleJudge(false); };
+        document.getElementById('monopoly-restart-btn').onclick = function() {
+            document.getElementById('monopoly-win-overlay').style.display = 'none'; document.getElementById('monopoly-start-screen').style.display = 'flex';
+            gameStarted = false; isBusy = false; diceBox.innerText = '🎲'; diceBox.style.opacity = '1'; selectedVehicleIds = []; turn = 0;
+            const cards = document.querySelectorAll('.monopoly-vehicle-card');
+            for(let i=0; i<cards.length; i++) cards[i].classList.remove('selected');
+            startBtn.disabled = true;
+        };
+        document.getElementById('monopoly-btn-back').onclick = function() { gameStarted = false; cancelAnimationFrame(animationFrameId); onExit(); };
+    }
+
+    // Memory Match
+    function startMemoryMatchGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="header-bar">' +
+                '<button class="btn-common btn-outline" id="memory-btn-back">Back</button>' +
+                '<div style="flex-grow:1;"></div>' +
+                '<div class="game-timer-display" id="memory-timer">00:00</div>' +
+            '</div>' +
+            '<div class="memory-board" id="memory-board-area"></div>' +
+            '<div class="game-modal" id="memory-modal">' +
+                '<div class="game-modal-content">' +
+                    '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                    '<p id="memory-final-time" style="font-size: 2em; color: var(--primary-color); font-family: monospace; margin: 10px 0;"></p>' +
+                    '<div style="display:flex; justify-content:center; gap:15px; margin-top:20px;">' +
+                        '<button class="btn-common" id="memory-btn-restart">Restart</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        
+        let cards = [], hasFlippedCard = false, lockBoard = false, firstCard, secondCard, matchedPairs = 0, startTime, timerInterval;
+        function init() {
+            clearInterval(timerInterval); document.getElementById('memory-timer').textContent = "00:00";
+            matchedPairs = 0; hasFlippedCard = false; lockBoard = false; firstCard = null; secondCard = null;
+            document.getElementById('memory-modal').style.display = 'none';
+            const board = document.getElementById('memory-board-area'); board.innerHTML = '';
+            
+            cards = vocabList.concat(vocabList).sort(function() { return Math.random() - 0.5; });
+            for(let i=0; i<cards.length; i++) {
+                let item = cards[i];
+                const el = document.createElement('div'); el.className = 'memory-card'; el.setAttribute('data-id', item.id);
+                
+                let visualHtml = item.img ? `<img src="${item.img}" style="width:2.5em; height:2.5em; object-fit:contain;">` : `<div class="vocab-emoji">${item.emoji||'📝'}</div>`;
+
+                el.innerHTML = '<div class="memory-card-inner"><div class="memory-card-front">❓</div><div class="memory-card-back">' +
+                    '<div class="vocab-pinyin">' + (item.pinyin||'') + '</div>' +
+                    '<div class="vocab-hanzi">' + (item.hanzi||'') + '</div>' +
+                    visualHtml + '</div></div>';
+                
+                el.onclick = function() {
+                    if (lockBoard || this === firstCard) return;
+                    this.classList.add('flipped'); 
+                    playVocabAudio(item);
+                    
+                    if (!hasFlippedCard) { hasFlippedCard = true; firstCard = this; return; }
+                    secondCard = this; lockBoard = true;
+                    if (firstCard.getAttribute('data-id') === secondCard.getAttribute('data-id')) {
+                        setTimeout(function() {
+                            firstCard.classList.add('memory-matched'); secondCard.classList.add('memory-matched');
+                            hasFlippedCard = false; lockBoard = false; firstCard = null; secondCard = null;
+                            matchedPairs++;
+                            if (matchedPairs === vocabList.length) {
+                                clearInterval(timerInterval); 
+                                document.getElementById('memory-final-time').textContent = document.getElementById('memory-timer').textContent;
+                                setTimeout(function() { document.getElementById('memory-modal').style.display = 'flex'; }, 500);
+                            }
+                        }, 600);
+                    } else { 
+                        setTimeout(function() { 
+                            firstCard.classList.remove('flipped'); secondCard.classList.remove('flipped'); 
+                            hasFlippedCard = false; lockBoard = false; firstCard = null; secondCard = null;
+                        }, 1000); 
+                    }
+                };
+                board.appendChild(el);
+            }
+            startTime = Date.now(); 
+            timerInterval = setInterval(function() { 
+                const s = Math.floor((Date.now() - startTime) / 1000); 
+                let mText = Math.floor(s/60).toString(); if(mText.length<2) mText = '0'+mText;
+                let sText = (s%60).toString(); if(sText.length<2) sText = '0'+sText;
+                document.getElementById('memory-timer').textContent = mText + ':' + sText; 
+            }, 1000);
+        }
+        const exitGame = function() { clearInterval(timerInterval); onExit(); };
+        document.getElementById('memory-btn-back').onclick = exitGame;
+        document.getElementById('memory-btn-restart').onclick = init;
+        init();
+    }
+
+    // Tic Tac Toe
+    function startTicTacToeGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="header-bar">' +
+                '<button class="btn-common btn-outline" id="ttt-btn-back">Back</button>' +
+                '<div style="flex-grow:1;"></div>' +
+            '</div>' +
+            '<div class="ttt-turn-indicator" id="ttt-turn-display">Player <span class="ttt-turn-x" style="margin-left: 10px;">❌</span></div>' +
+            '<div class="ttt-board" id="ttt-board-area"></div>' +
+            '<div class="game-modal" id="ttt-modal">' +
+                '<div class="game-modal-content">' +
+                    '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div><h2 id="ttt-result-msg" style="font-size: 2.5em; margin: 0; text-align:center;"></h2>' +
+                    '<div style="display:flex; justify-content:center; gap:15px; margin-top:30px;">' +
+                        '<button class="btn-common" id="ttt-btn-restart">Restart</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+            
+        let currentPlayer = 'X', boardState = [null,null,null,null,null,null,null,null,null], gameActive = true;
+        const winConditions = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ];
+        function init() {
+            currentPlayer = 'X'; boardState = [null,null,null,null,null,null,null,null,null]; gameActive = true;
+            document.getElementById('ttt-modal').style.display = 'none';
+            document.getElementById('ttt-turn-display').innerHTML = 'Player <span class="ttt-turn-x" style="margin-left: 10px;">❌</span>';
+            let gameVocab = []; 
+            while(gameVocab.length < 9) gameVocab = gameVocab.concat(vocabList.slice().sort(function() { return 0.5 - Math.random(); }));
+            gameVocab = gameVocab.slice(0, 9);
+            const board = document.getElementById('ttt-board-area'); board.innerHTML = '';
+            
+            for(let i=0; i<9; i++) {
+                let item = gameVocab[i];
+                let index = i;
+                const cell = document.createElement('div'); cell.className = 'ttt-cell';
+                let visualHtml = item.img ? `<img src="${item.img}" style="width:2.5em; height:2.5em; object-fit:contain;">` : `<div class="vocab-emoji">${item.emoji||'📝'}</div>`;
+                cell.innerHTML = '<div class="vocab-pinyin">' + (item.pinyin||'') + '</div><div class="vocab-hanzi">' + (item.hanzi||'') + '</div>' + visualHtml;
+                
+                cell.onclick = function() {
+                    if (!gameActive || boardState[index]) return;
+                    playVocabAudio(item); 
+                    boardState[index] = currentPlayer; 
+                    cell.classList.add(currentPlayer === 'X' ? 'ttt-x' : 'ttt-o');
+                    
+                    let won = false;
+                    for(let wc=0; wc<winConditions.length; wc++) {
+                        let a=winConditions[wc][0], b=winConditions[wc][1], c=winConditions[wc][2];
+                        if(boardState[a] && boardState[a]===boardState[b] && boardState[a]===boardState[c]) won = true;
+                    }
+                    
+                    if (won) { 
+                        gameActive = false; 
+                        document.getElementById('ttt-result-msg').innerHTML = (currentPlayer==='X'?'❌':'⭕') + ' You win'; 
+                        setTimeout(function(){ document.getElementById('ttt-modal').style.display = 'flex'; }, 500); 
+                        return; 
+                    }
+                    
+                    let draw = true;
+                    for(let bs=0; bs<boardState.length; bs++) { if(boardState[bs]===null) draw = false; }
+                    
+                    if (draw) { 
+                        gameActive = false; document.getElementById('ttt-result-msg').innerHTML = "Draw"; 
+                        setTimeout(function(){ document.getElementById('ttt-modal').style.display = 'flex'; }, 500); 
+                        return; 
+                    }
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    document.getElementById('ttt-turn-display').innerHTML = 'Player <span class="' + (currentPlayer==='X'?'ttt-turn-x':'ttt-turn-o') + '" style="margin-left: 10px;">' + (currentPlayer==='X'?'❌':'⭕') + '</span>';
+                };
+                board.appendChild(cell);
+            }
+        }
+        document.getElementById('ttt-btn-back').onclick = onExit;
+        document.getElementById('ttt-btn-restart').onclick = init;
+        init();
+    }
+
+    // Snake Game
+    function startSnakeGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="header-bar">' +
+                '<button class="btn-common btn-outline" id="snake-btn-back">Back</button>' +
+                '<div style="flex-grow:1;"></div>' +
+            '</div>' +
+            '<div class="snake-main-layout">' +
+                '<div id="snake-game-container">' +
+                    '<canvas id="snakeCanvas"></canvas>' +
+                    '<div id="snake-start-screen" class="snake-overlay">' +
+                        '<div style="font-size: 4rem; margin-bottom: 2rem;">🐍</div>' +
+                        '<div style="display: flex; flex-direction: column; gap: 1.25rem; width: 16rem;">' +
+                            '<button id="snake-btn-slow" class="snake-pill-btn snake-btn-blue" style="padding: 15px; font-size: 1.5rem;">Slow mode</button>' +
+                            '<button id="snake-btn-fast" class="snake-pill-btn snake-btn-coral" style="padding: 15px; font-size: 1.5rem;">Fast mode</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div id="snake-game-over-screen" class="snake-overlay hidden">' +
+                        '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                        '<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2.5rem;">' +
+                            '<span style="font-size: 2rem; font-weight: 800; color: #1e293b;">Score</span><span id="snake-final-score-val" style="font-size: 4.5rem; font-weight: 800; color: #1e293b;">0</span>' +
+                        '</div>' +
+                        '<div style="display: flex; flex-direction: column; gap: 1rem; width: 16rem;">' +
+                            '<button id="snake-restart-btn" class="snake-pill-btn snake-btn-green" style="padding: 15px; font-size: 1.5rem;">Restart</button>' +
+                            '<button id="snake-change-speed-btn" class="snake-pill-btn snake-btn-gray" style="padding: 15px; font-size: 1.5rem;">Start</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="snake-score-panel">' +
+                    '<div class="snake-score-label">Score</div>' +
+                    '<div class="snake-score-display"><span id="snake-score-val">0</span></div>' +
+                '</div>' +
+            '</div>';
+            
+        const canvas = document.getElementById('snakeCanvas'), ctx = canvas.getContext('2d'), scoreVal = document.getElementById('snake-score-val');
+        
+        const COLORS = [
+            { id: "red", hex: "#FF8A8A" }, { id: "yellow", hex: "#FACC15" }, { id: "blue", hex: "#60A5FA" }, 
+            { id: "green", hex: "#34D399" }, { id: "black", hex: "#475569" }, { id: "white", hex: "#FFFFFF" }, 
+            { id: "orange", hex: "#FB923C" }, { id: "purple", hex: "#A78BFA" },
+            { id: "pink", hex: "#FFD1DC" }, { id: "gray", hex: "#8e8e93" }, { id: "grey", hex: "#8e8e93" }, 
+            { id: "brown", hex: "#8B4513" }
+        ];
+
+        let gridSize = 20, tileCount = 20, snake = [], food = { x: 5, y: 5, color: COLORS[0], word: vocabList[0] }, dx = 1, dy = 0, nextDx = 1, nextDy = 0;
+        let score = 0, gameActive = false, currentColor = COLORS[2], lastTime = 0, currentSpeed = 330, animationId;
+
+        function resizeCanvas() {
+            const isDesktop = window.innerWidth >= 768, rect = document.querySelector('.snake-main-layout').getBoundingClientRect();
+            let size = Math.floor(Math.min(isDesktop ? (rect.width - 180) : (rect.width - 20), rect.height - 20));
+            if (size < 250) size = 250; size = size - (size % tileCount);
+            canvas.width = size; canvas.height = size; gridSize = canvas.width / tileCount; canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
+        }
+        function spawnFood() {
+            food.x = Math.floor(Math.random() * (tileCount - 2)) + 1; food.y = Math.floor(Math.random() * (tileCount - 2)) + 1;
+            food.word = vocabList[Math.floor(Math.random() * vocabList.length)];
+            let isColors = false;
+            if(currentModuleData && currentModuleData.id) isColors = (String(currentModuleData.id).toLowerCase() === 'colors');
+            
+            if (isColors) {
+                let found = false;
+                for(let i=0; i<COLORS.length; i++) { if(COLORS[i].id === food.word.id) { food.color = COLORS[i]; found = true; break; } }
+                if(!found) food.color = COLORS[2];
+            } else {
+                food.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            }
+            
+            let overlap = false;
+            for(let i=0; i<snake.length; i++) { if(snake[i].x === food.x && snake[i].y === food.y) overlap = true; }
+            if(overlap) spawnFood();
+        }
+        
+        let loadedFoodImage = null;
+        function draw() {
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#cbd5e1"; 
+            for(let i=0;i<=tileCount;i++) {
+                for(let j=0;j<=tileCount;j++) { ctx.beginPath(); ctx.arc(i*gridSize, j*gridSize, 2, 0, 2*Math.PI); ctx.fill(); }
+            }
+            const cx = food.x * gridSize + gridSize/2, cy = food.y * gridSize + gridSize/2;
+            let isColors = false;
+            if(currentModuleData && currentModuleData.id) isColors = (String(currentModuleData.id).toLowerCase() === 'colors');
+            
+            if (isColors) {
+                ctx.save();
+                ctx.shadowColor = "rgba(0,0,0,0.3)";
+                ctx.shadowBlur = 5;
+                ctx.shadowOffsetY = 2;
+                ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.4, 0, 2 * Math.PI);
+                ctx.fillStyle = food.color.hex; ctx.fill(); 
+                if(food.color.hex === "#FFFFFF" || food.color.hex === "#ffffff") { ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1; ctx.stroke(); }
+                ctx.restore();
+            }
+            
+            if (food.word && food.word.img) {
+                if (!loadedFoodImage || loadedFoodImage.src !== food.word.img) {
+                    loadedFoodImage = new Image();
+                    loadedFoodImage.src = food.word.img;
+                }
+                if (loadedFoodImage.complete) {
+                    let s = gridSize * 0.8;
+                    ctx.drawImage(loadedFoodImage, cx - s/2, cy - s/2, s, s);
+                }
+            } else if (food.word && food.word.emoji) { 
+                ctx.font = gridSize + "px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(food.word.emoji, cx, cy + gridSize * 0.08); 
+            }
+            
+            for(let index=0; index<snake.length; index++) {
+                let part = snake[index];
+                
+                ctx.save();
+                if (currentColor.hex === "#FFFFFF" || currentColor.hex === "#ffffff") {
+                    ctx.shadowColor = "rgba(0,0,0,0.4)";
+                    ctx.shadowBlur = 6;
+                    ctx.shadowOffsetY = 2;
+                }
+                
+                ctx.fillStyle = currentColor.hex; 
+                ctx.beginPath();
+                if(ctx.roundRect) ctx.roundRect(part.x * gridSize + 1, part.y * gridSize + 1, gridSize - 2, gridSize - 2, 6);
+                else ctx.rect(part.x * gridSize + 1, part.y * gridSize + 1, gridSize - 2, gridSize - 2);
+                ctx.fill();
+                ctx.restore(); 
+
+                if (index === 0) {
+                    ctx.fillStyle = "white";
+                    let ex1=0, ey1=0, ex2=0, ey2=0;
+                    if (dx === 1) { ex1=12; ey1=6; ex2=12; ey2=14; }
+                    else if (dx === -1) { ex1=8; ey1=6; ex2=8; ey2=14; }
+                    else if (dy === 1) { ex1=6; ey1=12; ex2=14; ey2=12; }
+                    else if (dy === -1) { ex1=6; ey1=8; ex2=14; ey2=8; }
+                    else { ex1=12; ey1=6; ex2=12; ey2=14; } 
+
+                    let sPx = part.x*gridSize, sPy = part.y*gridSize;
+                    ctx.beginPath(); ctx.arc(sPx + ex1, sPy + ey1, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(sPx + ex2, sPy + ey2, 2.5, 0, Math.PI*2); ctx.fill();
+
+                    ctx.fillStyle = "black";
+                    ctx.beginPath(); ctx.arc(sPx + ex1 + dx, sPy + ey1 + dy, 1.2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(sPx + ex2 + dx, sPy + ey2 + dy, 1.2, 0, Math.PI*2); ctx.fill();
+                }
+            }
+        }
+        function move() {
+            dx = nextDx; dy = nextDy; const th = { x: snake[0].x + dx, y: snake[0].y + dy };
+            let hitSelf = false;
+            for(let i=0; i<snake.length; i++) { if(snake[i].x === th.x && snake[i].y === th.y) hitSelf = true; }
+            if (th.x < 0 || th.x >= tileCount || th.y < 0 || th.y >= tileCount || hitSelf) { 
+                gameActive = false; document.getElementById('snake-final-score-val').textContent = score; 
+                document.getElementById('snake-game-over-screen').classList.remove('hidden'); 
+                return; 
+            }
+            snake.unshift(th);
+            if (th.x === food.x && th.y === food.y) { 
+                score += 10; scoreVal.textContent = score; 
+                let isColors = false; if(currentModuleData && currentModuleData.id) isColors = (String(currentModuleData.id).toLowerCase() === 'colors');
+                if (isColors) { currentColor = food.color; } 
+                else { currentColor = COLORS[2]; }
+                playVocabAudio(food.word); 
+                spawnFood(); 
+            } else {
+                snake.pop();
+            }
+        }
+        function gameLoop(t) { if (!gameActive) return; if (t - lastTime > currentSpeed) { move(); lastTime = t; } draw(); animationId = requestAnimationFrame(gameLoop); }
+        function handleInput(k) { if(!gameActive) return; if(k==='Up'&&dy!==1){nextDx=0;nextDy=-1;} if(k==='Down'&&dy!==-1){nextDx=0;nextDy=1;} if(k==='Left'&&dx!==1){nextDx=-1;nextDy=0;} if(k==='Right'&&dx!==-1){nextDx=1;nextDy=0;} }
+        
+        window.addEventListener('keydown', function(e) { 
+            const m = {'ArrowUp':'Up','ArrowDown':'Down','ArrowLeft':'Left','ArrowRight':'Right'}; 
+            if(m[e.key]) handleInput(m[e.key]); 
+        });
+
+        canvas.addEventListener('click', function(e) {
+            if(!gameActive) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            const headX = snake[0].x * gridSize + gridSize/2;
+            const headY = snake[0].y * gridSize + gridSize/2;
+            const diffX = clickX - headX;
+            const diffY = clickY - headY;
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 0 && dx !== -1) { nextDx = 1; nextDy = 0; }
+                else if (diffX < 0 && dx !== 1) { nextDx = -1; nextDy = 0; }
+            } else {
+                if (diffY > 0 && dy !== -1) { nextDx = 0; nextDy = 1; }
+                else if (diffY < 0 && dy !== 1) { nextDx = 0; nextDy = -1; }
+            }
+        });
+        
+        document.getElementById('snake-btn-slow').onclick = function() { currentSpeed = 500; startGame(); };
+        document.getElementById('snake-btn-fast').onclick = function() { currentSpeed = 330; startGame(); };
+        document.getElementById('snake-restart-btn').onclick = function() { startGame(); };
+        document.getElementById('snake-change-speed-btn').onclick = function() { document.getElementById('snake-game-over-screen').classList.add('hidden'); document.getElementById('snake-start-screen').classList.remove('hidden'); gameActive = false; draw(); };
+        
+        function startGame() { document.getElementById('snake-start-screen').classList.add('hidden'); document.getElementById('snake-game-over-screen').classList.add('hidden'); snake = [{x:5,y:10},{x:4,y:10},{x:3,y:10}]; score = 0; scoreVal.textContent = "0"; dx=1; dy=0; nextDx=1; nextDy=0; currentColor = COLORS[2]; spawnFood(); gameActive = true; animationId = requestAnimationFrame(gameLoop); }
+        document.getElementById('snake-btn-back').onclick = function() { gameActive = false; cancelAnimationFrame(animationId); onExit(); };
+        resizeCanvas(); draw(); window.addEventListener('resize', function() { resizeCanvas(); draw(); });
+    }
+
+    // Linkup Game
+    function startLinkupGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="linkup-screen-container">' +
+                '<button class="btn-common btn-outline" id="linkup-btn-back" style="position: absolute; top: 15px; left: 15px; z-index: 1000; padding: 8px 15px;">Back</button>' +
+                '<div class="linkup-game-wrapper">' +
+                    '<div class="linkup-game-area" id="linkup-game-area"></div>' +
+                    '<canvas id="linkup-line-canvas"></canvas>' +
+                    '<div class="linkup-overlay" id="linkup-overlay">' +
+                        '<div id="linkup-start-screen" style="text-align: center;">' +
+                            '<button class="btn-common" id="linkup-start-btn" style="font-size: 1.5rem; padding: 15px 40px; border-radius: 50px; margin-bottom: 30px;">Start</button>' +
+                            '<div style="animation: flashHint 1.5s infinite; display: flex; flex-direction: column; align-items: center; gap: 0;">' +
+                                '<div style="display: flex; align-items: center;">' +
+                                    '<div style="width: 40px; height: 40px; border: 3px solid #7BAE7F; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #7BAE7F; font-size: 20px;">A</div>' +
+                                    '<div style="width: 30px; height: 4px; background: #7BAE7F;"></div>' +
+                                    '<div style="width: 40px; height: 40px; border: 3px solid #7BAE7F; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #7BAE7F; font-size: 20px;">A</div>' +
+                                '</div>' +
+                                '<div style="display: flex; align-items: center; width: 110px; justify-content: flex-end; padding-right: 18px;">' +
+                                    '<div style="width: 4px; height: 25px; background: #7BAE7F;"></div>' +
+                                '</div>' +
+                                '<div style="display: flex; align-items: center; width: 110px; justify-content: flex-end;">' +
+                                    '<div style="width: 40px; height: 40px; border: 3px solid #7BAE7F; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #7BAE7F; font-size: 20px;">A</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div id="linkup-result-screen" class="hidden" style="text-align: center;">' +
+                            '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                            '<div style="font-size: 2rem; font-weight: 800; color: #8D6E63; margin-bottom: 10px;">Score</div><span id="linkup-final-score" style="font-size: 60px; font-weight: 900; display:block; color: #8D6E63; margin-bottom: 20px;">0</span>' +
+                            '<button class="btn-common" id="linkup-restart-btn" style="font-size: 1.5rem; padding: 15px 40px; border-radius: 50px;">Restart</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="linkup-external-stats">' +
+                    '<div class="linkup-stat-card"><span class="linkup-stat-label">Time</span><div id="linkup-timer-box">00:60</div></div>' +
+                    '<div class="linkup-stat-card"><span class="linkup-stat-label">Score</span><div id="linkup-score-box">0</div></div>' +
+                '</div>' +
+            '</div>' +
+            '<canvas id="linkup-fireworks-canvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:999; display:none;"></canvas>';
+
+        const ROWS = 6, COLS = 5;
+        let score = 0, timeLeft = 60, isPlaying = false, gridData = [], selectedChain = [], isDragging = false;
+        let timerInterval = null, animationId = null, particles = [];
+
+        const gameArea = document.getElementById('linkup-game-area'), lineCanvas = document.getElementById('linkup-line-canvas'), ctx = lineCanvas.getContext('2d');
+        const fwCanvas = document.getElementById('linkup-fireworks-canvas'), fwCtx = fwCanvas.getContext('2d'), scoreBox = document.getElementById('linkup-score-box'), timerBox = document.getElementById('linkup-timer-box');
+
+        function initGrid() { 
+            do { 
+                gridData = []; 
+                for(let r=0;r<ROWS;r++) { 
+                    gridData[r]=[]; 
+                    for(let c=0;c<COLS;c++) gridData[r][c] = Math.floor(Math.random()*vocabList.length); 
+                } 
+            } while(!hasMatches()); 
+            renderGrid(); 
+        }
+        
+        function hasMatches() { 
+            const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+            for(let r=0;r<ROWS;r++) {
+                for(let c=0;c<COLS;c++) {
+                    for(let d=0; d<dirs.length; d++) {
+                        let dr = dirs[d][0], dc = dirs[d][1];
+                        if(r+dr<ROWS && c+dc>=0 && c+dc<COLS && gridData[r+dr][c+dc]===gridData[r][c]) return true; 
+                    }
+                }
+            }
+            return false; 
+        }
+        
+        function renderGrid() {
+            gameArea.innerHTML = '';
+            for(let r=0;r<ROWS;r++) {
+                for(let c=0;c<COLS;c++) {
+                    const tile = document.createElement('div'); tile.className = 'linkup-tile'; tile.setAttribute('data-r', r); tile.setAttribute('data-c', c);
+                    if(gridData[r][c] !== null) {
+                        let item = vocabList[gridData[r][c]];
+                        if(item.img) tile.innerHTML = `<img src="${item.img}" style="width: 80%; height: 80%; object-fit: contain; pointer-events:none;">`;
+                        else tile.innerText = item.emoji || '📝';
+                    }
+                    
+                    tile.addEventListener('mousedown', function(e) { e.preventDefault(); startDrag(r, c); });
+                    tile.addEventListener('mouseenter', function() { continueDrag(r, c); });
+                    tile.addEventListener('touchstart', function(e) { 
+                        e.preventDefault(); 
+                        const t = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY); 
+                        if(t && t.getAttribute('data-r')) startDrag(parseInt(t.getAttribute('data-r')), parseInt(t.getAttribute('data-c'))); 
+                    }, {passive: false});
+                    tile.addEventListener('touchmove', function(e) { 
+                        e.preventDefault(); 
+                        const t = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY); 
+                        if(t && t.getAttribute('data-r')) continueDrag(parseInt(t.getAttribute('data-r')), parseInt(t.getAttribute('data-c'))); 
+                    }, {passive: false});
+                    gameArea.appendChild(tile);
+                }
+            }
+            setTimeout(function() { lineCanvas.width = gameArea.clientWidth; lineCanvas.height = gameArea.clientHeight; }, 50);
+        }
+
+        function startDrag(r, c) { 
+            if (!isPlaying || gridData[r][c] === null) return; 
+            isDragging = true; selectedChain = [{r:r, c:c}]; 
+            playVocabAudio(vocabList[gridData[r][c]]); 
+            updateVisuals(); 
+        }
+        function continueDrag(r, c) {
+            if (!isPlaying || !isDragging || gridData[r][c] === null) return;
+            const last = selectedChain[selectedChain.length - 1];
+            if (selectedChain.length > 1 && selectedChain[selectedChain.length - 2].r === r && selectedChain[selectedChain.length - 2].c === c) { selectedChain.pop(); updateVisuals(); return; }
+            
+            let alreadyIn = false;
+            for(let i=0; i<selectedChain.length; i++) { if(selectedChain[i].r === r && selectedChain[i].c === c) alreadyIn = true; }
+            
+            if (gridData[r][c] === gridData[last.r][last.c] && Math.abs(last.r - r) <= 1 && Math.abs(last.c - c) <= 1 && !alreadyIn) { 
+                selectedChain.push({r:r, c:c}); updateVisuals(); 
+            }
+        }
+        function endDrag() { 
+            if (!isPlaying || !isDragging) return; 
+            isDragging = false; 
+            if (selectedChain.length >= 2) { 
+                score += selectedChain.length * 10; scoreBox.innerText = score; 
+                for(let i=0; i<selectedChain.length; i++) {
+                    gridData[selectedChain[i].r][selectedChain[i].c] = null;
+                }
+                for(let c=0;c<COLS;c++){ 
+                    let empty=0; 
+                    for(let r=ROWS-1;r>=0;r--){ 
+                        if(gridData[r][c]===null) { empty++; }
+                        else if(empty>0){ gridData[r+empty][c]=gridData[r][c]; gridData[r][c]=null; } 
+                    } 
+                    for(let r=0;r<empty;r++) gridData[r][c]=Math.floor(Math.random()*vocabList.length); 
+                } 
+                selectedChain=[]; renderGrid(); 
+                if(!hasMatches()) setTimeout(initGrid, 500); 
+            } else { 
+                selectedChain = []; updateVisuals(); 
+            } 
+        }
+
+        function updateVisuals() {
+            const tiles = document.querySelectorAll('.linkup-tile');
+            for(let i=0; i<tiles.length; i++) tiles[i].classList.remove('selected');
+            
+            for(let i=0; i<selectedChain.length; i++) {
+                let p = selectedChain[i];
+                const t = tiles[p.r * COLS + p.c]; 
+                if(t) t.classList.add('selected');
+            }
+            
+            ctx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+            if (selectedChain.length >= 2) {
+                ctx.beginPath(); 
+                ctx.strokeStyle = 'rgba(200, 50, 200, 0.8)'; 
+                ctx.lineWidth = 12; 
+                ctx.lineCap = 'round'; 
+                ctx.lineJoin = 'round'; 
+                ctx.shadowColor = 'rgba(200, 50, 200, 1)'; 
+                ctx.shadowBlur = 10;
+                const wrapperRect = gameArea.getBoundingClientRect();
+                for(let i=0; i<selectedChain.length; i++) {
+                    let p = selectedChain[i];
+                    const rect = tiles[p.r * COLS + p.c].getBoundingClientRect(), x = rect.left - wrapperRect.left + rect.width/2, y = rect.top - wrapperRect.top + rect.height/2; 
+                    if (i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y); 
+                }
+                ctx.stroke();
+            }
+        }
+
+        const handleGlobalMouseUp = function() { endDrag(); };
+        const handleGlobalTouchEnd = function() { endDrag(); };
+        window.addEventListener('mouseup', handleGlobalMouseUp); window.addEventListener('touchend', handleGlobalTouchEnd);
+        
+        document.getElementById('linkup-start-btn').onclick = function() {
+            document.getElementById('linkup-overlay').style.display = 'none'; isPlaying = true; score = 0; scoreBox.innerText = "0"; initGrid();
+            timeLeft = 60; timerBox.innerText = "00:60"; timerBox.classList.remove('warning'); clearInterval(timerInterval);
+            timerInterval = setInterval(function() { 
+                timeLeft--; 
+                let secStr = timeLeft.toString(); if(secStr.length<2) secStr = '0'+secStr;
+                timerBox.innerText = '00:' + secStr; 
+                if(timeLeft<=10) timerBox.classList.add('warning'); 
+                if(timeLeft<=0) { 
+                    isPlaying = false; clearInterval(timerInterval); 
+                    document.getElementById('linkup-overlay').style.display = 'flex'; 
+                    document.getElementById('linkup-start-screen').classList.add('hidden'); 
+                    document.getElementById('linkup-result-screen').classList.remove('hidden'); 
+                    document.getElementById('linkup-final-score').innerText = score; 
+                    fwCanvas.style.display = 'block'; fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; 
+                    updateFireworks(); 
+                } 
+            }, 1000);
+        };
+        
+        function updateFireworks() { 
+            fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height); 
+            if(Math.random()<0.1){ 
+                const x=Math.random()*fwCanvas.width,y=Math.random()*fwCanvas.height*0.5,c='hsl('+(Math.random()*360)+',100%,50%)'; 
+                for(let i=0;i<30;i++) particles.push({x:x,y:y,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*10,life:1,c:c}); 
+            } 
+            
+            let alive = [];
+            for(let i=0; i<particles.length; i++) {
+                if(particles[i].life>0) {
+                    let p = particles[i];
+                    p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.life-=0.02; 
+                    fwCtx.fillStyle=p.c; fwCtx.globalAlpha=p.life; fwCtx.beginPath();fwCtx.arc(p.x,p.y,3,0,7);fwCtx.fill();
+                    alive.push(p);
+                }
+            }
+            particles = alive;
+            if(!isPlaying) animationId = requestAnimationFrame(updateFireworks); 
+        }
+        document.getElementById('linkup-restart-btn').onclick = function() { document.getElementById('linkup-result-screen').classList.add('hidden'); document.getElementById('linkup-start-screen').classList.remove('hidden'); fwCanvas.style.display = 'none'; cancelAnimationFrame(animationId); clearInterval(timerInterval); timerBox.classList.remove('warning'); timerBox.innerText = "00:60"; };
+        document.getElementById('linkup-btn-back').onclick = function() { isPlaying = false; clearInterval(timerInterval); cancelAnimationFrame(animationId); window.removeEventListener('mouseup', handleGlobalMouseUp); window.removeEventListener('touchend', handleGlobalTouchEnd); onExit(); };
+    }
+
+    // Match 2
+    function startMatch2Game(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="match2-main-layout">' +
+                '<button class="btn-common btn-outline" id="match2-btn-back" style="position: absolute; top: 15px; left: 15px; z-index: 1000; padding: 8px 15px;">Back</button>' +
+                '<div class="match2-game-container">' +
+                    '<div class="match2-grid" id="match2-grid"></div>' +
+                    '<div class="match2-overlay" id="match2-overlay">' +
+                        '<div id="match2-start-menu" style="text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center;">' +
+                            '<button class="btn-common" id="match2-start-btn" style="font-size: 1.5rem; padding: 15px 40px; border-radius: 50px;">Start</button>' +
+                            '<div style="animation: flashHint 1.5s infinite; margin-top: 25px; display: flex; gap: 15px; justify-content: center;">' +
+                                '<div style="width: 50px; height: 50px; border: 3px solid #b026ff; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #7BAE7F; font-size: 24px; box-shadow: 0 0 10px #b026ff;">🍒</div>' +
+                                '<div style="width: 50px; height: 50px; border: 3px solid #b026ff; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #7BAE7F; font-size: 24px; box-shadow: 0 0 10px #b026ff;">🍒</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div id="match2-result">' +
+                            '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div><div style="font-size: 2rem; font-weight: 800; color: #8D6E63; margin-bottom: 10px;">Score</div><div id="match2-final-score-val" style="font-size:60px;font-weight:bold;color:#8D6E63;margin-bottom:15px;"></div>' +
+                            '<button class="btn-common" id="match2-retry-btn" style="font-size: 1.5rem; padding: 15px 40px; border-radius: 50px;">Restart</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="match2-sidebar">' +
+                    '<div class="match2-side-box"><div class="match2-side-label">Time</div><div id="match2-timer">01:00</div></div>' +
+                    '<div class="match2-side-box"><div class="match2-side-label">Score</div><div id="match2-score">0</div></div>' +
+                '</div>' +
+            '</div>';
+
+        let gameData = [], score = 0, timeLeft = 60, timerId = null, firstTile = null, isProcessing = false;
+        const totalPairsNeeded = 15, pairsPerWord = Math.floor(totalPairsNeeded / vocabList.length), remainingPairs = totalPairsNeeded % vocabList.length;
+        
+        for (let idx = 0; idx < vocabList.length; idx++) {
+            let count = pairsPerWord + (idx < remainingPairs ? 1 : 0); 
+            for(let i=0; i<count*2; i++) { gameData.push(vocabList[idx]); }
+        }
+        
+        const grid = document.getElementById('match2-grid'), scoreDisplay = document.getElementById('match2-score'), timerDisplay = document.getElementById('match2-timer'), overlay = document.getElementById('match2-overlay'), resultDiv = document.getElementById('match2-result');
+
+        function initGame() {
+            for (let i = gameData.length - 1; i > 0; i--) { 
+                const j = Math.floor(Math.random() * (i + 1)); 
+                let temp = gameData[i]; gameData[i] = gameData[j]; gameData[j] = temp;
+            }
+            grid.innerHTML = '';
+            for(let index=0; index<gameData.length; index++) {
+                let item = gameData[index];
+                const tile = document.createElement('div'); tile.classList.add('match2-tile'); 
+                tile.setAttribute('data-hanzi', item.hanzi || ''); 
+                tile.setAttribute('data-index', index);
+                
+                if(item.img) tile.innerHTML = `<img src="${item.img}" style="width: 80%; height: 80%; object-fit: contain; pointer-events:none;">`;
+                else tile.innerText = item.emoji || '📝';
+                
+                tile.addEventListener('click', function() {
+                    if (isProcessing || tile.classList.contains('hidden') || tile === firstTile) return;
+                    let targetItem = gameData[parseInt(tile.getAttribute('data-index'))];
+                    playVocabAudio(targetItem); 
+                    tile.classList.add('selected');
+                    
+                    if (!firstTile) firstTile = tile;
+                    else {
+                        isProcessing = true;
+                        if (firstTile.getAttribute('data-hanzi') === tile.getAttribute('data-hanzi')) {
+                            playTone(523, 0.2); score += 20; scoreDisplay.innerText = score;
+                            const t1 = firstTile, t2 = tile;
+                            setTimeout(function() { 
+                                t1.classList.add('correct'); t2.classList.add('correct'); 
+                                setTimeout(function() { 
+                                    t1.classList.add('hidden'); t2.classList.add('hidden'); isProcessing = false; 
+                                    let anyVisible = false;
+                                    const allTiles = document.querySelectorAll('.match2-tile');
+                                    for(let ti=0; ti<allTiles.length; ti++) { if(!allTiles[ti].classList.contains('hidden')) anyVisible = true; }
+                                    if(!anyVisible) endGame(); 
+                                }, 400); 
+                            }, 200);
+                            firstTile = null;
+                        } else {
+                            playTone(220, 0.3, 'sawtooth'); const t1 = firstTile, t2 = tile;
+                            setTimeout(function() { t1.classList.remove('selected'); t2.classList.remove('selected'); firstTile = null; isProcessing = false; }, 500);
+                        }
+                    }
+                });
+                grid.appendChild(tile);
+            }
+        }
+
+        function endGame() {
+            clearInterval(timerId); overlay.style.display = 'flex'; document.getElementById('match2-start-menu').style.display = 'none'; resultDiv.classList.add('active');
+            document.getElementById('match2-final-score-val').innerText = score;
+        }
+
+        document.getElementById('match2-start-btn').onclick = function() {
+            overlay.style.display = 'none'; 
+            timerId = setInterval(function() { 
+                timeLeft--; 
+                let secStr = timeLeft.toString(); if(secStr.length<2) secStr = '0'+secStr;
+                timerDisplay.innerText = '00:' + secStr; 
+                if(timeLeft<=0) endGame(); 
+            }, 1000);
+        };
+        document.getElementById('match2-retry-btn').onclick = function() { resultDiv.classList.remove('active'); document.getElementById('match2-start-menu').style.display = 'flex'; score = 0; timeLeft = 60; scoreDisplay.innerText = "0"; timerDisplay.innerText = "01:00"; isProcessing = false; firstTile = null; initGame(); };
+        document.getElementById('match2-btn-back').onclick = function() { clearInterval(timerId); onExit(); };
+        initGame();
+    }
+
+    // Hidden Object
+    function startHiddenObjectGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="ho-layout">' +
+                '<div class="ho-sidebar">' +
+                    '<div class="ho-sidebar-header"><h2 style="margin:0 0 5px 0;font-size:2em;">📋</h2></div>' +
+                    '<div class="ho-target-list" id="ho-target-list"></div>' +
+                    '<div style="margin-top:auto;display:flex;gap:10px;padding-top:15px;">' +
+                        '<button class="btn-common btn-outline" id="ho-btn-back" style="flex:1;">Back</button>' +
+                        '<button class="btn-common" id="ho-hint-btn" style="flex:2;background:#FACC15;color:#8D6E63;">💡 (<span id="ho-hints-count">2</span>)</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="ho-board bg-level-4" id="ho-board"></div>' +
+                '<div class="ho-overlay hidden" id="ho-result-screen">' +
+                    '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                    '<button class="btn-common" id="ho-retry-btn" style="font-size:1.5rem;padding:15px 40px;border-radius:50px;background:#4CAF50;margin-top:30px;">Restart</button>' +
+                '</div>' +
+            '</div>';
+            
+        let currentTargets = {}, hintsRemaining = 2, isGameRunning = false, activeHintElement = null;
+        function init() {
+            hintsRemaining = 2; isGameRunning = true; activeHintElement = null; currentTargets = {};
+            document.getElementById('ho-board').innerHTML = ''; document.getElementById('ho-result-screen').classList.add('hidden');
+            for(let i=0; i<vocabList.length; i++) { currentTargets[vocabList[i].id] = 2; }
+            updateUI();
+            
+            const itemsToPlace = []; 
+            for(let i=0; i<vocabList.length; i++) { 
+                itemsToPlace.push({ isTarget:true, word:vocabList[i] }); 
+                itemsToPlace.push({ isTarget:true, word:vocabList[i] }); 
+            }
+            
+            let pool = [];
+            if (currentModuleData && currentModuleData.items) {
+                for(let i=0; i<currentModuleData.items.length; i++) {
+                    let isVocab = false;
+                    for(let j=0; j<vocabList.length; j++) { if(vocabList[j].id === currentModuleData.items[i].id) isVocab = true; }
+                    if(!isVocab) pool.push(currentModuleData.items[i]);
+                }
+            }
+            if(!pool.length && modulesArray && modulesArray.length > 0) {
+                for(let mi=0; mi<modulesArray.length; mi++) {
+                    let m = modulesArray[mi];
+                    if(m && currentModuleData && m.id !== currentModuleData.id && m.items) {
+                        for(let ii=0; ii<m.items.length; ii++) pool.push(m.items[ii]);
+                    }
+                }
+            }
+            
+            for(let i=0;i<60;i++) {
+                if(pool.length > 0) itemsToPlace.push({ isTarget:false, word:pool[Math.floor(Math.random()*pool.length)] });
+            }
+            
+            itemsToPlace.sort(function() { return Math.random() - 0.5; });
+            for(let i=0; i<itemsToPlace.length; i++) {
+                let data = itemsToPlace[i];
+                const el = document.createElement('div'); el.className = 'ho-item'; 
+                
+                if(data.word.img) el.innerHTML = `<img src="${data.word.img}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                else el.innerText = data.word.emoji || '📝'; 
+                
+                el.style.zIndex = data.isTarget ? '10' : '1';
+                el.style.top = (8+Math.random()*80) + '%'; el.style.left = (5+Math.random()*85) + '%'; el.style.transform = 'rotate(' + (Math.random()*60-30) + 'deg)';
+                if(data.isTarget) el.setAttribute('data-target-id', data.word.id);
+                
+                el.onclick = function() {
+                    if(!isGameRunning) return;
+                    if(data.isTarget && currentTargets[data.word.id] > 0) {
+                        currentTargets[data.word.id]--; playVocabAudio(data.word); el.className = 'ho-item found-anim'; if(activeHintElement === el) activeHintElement = null;
+                        setTimeout(function(){ el.parentNode.removeChild(el); }, 500); updateUI();
+                        
+                        let allFound = true;
+                        for(let k in currentTargets) { if(currentTargets.hasOwnProperty(k) && currentTargets[k] > 0) allFound = false; }
+                        if(allFound) { isGameRunning = false; setTimeout(function(){ document.getElementById('ho-result-screen').classList.remove('hidden'); }, 1000); }
+                    } else if(!data.isTarget) { 
+                        const t = el.style.transform; el.style.transform = t + ' scale(1.3)'; 
+                        setTimeout(function(){ el.style.transform = t; }, 200); 
+                    }
+                };
+                document.getElementById('ho-board').appendChild(el);
+            }
+        }
+        function updateUI() {
+            document.getElementById('ho-hints-count').innerText = hintsRemaining;
+            let html = ''; 
+            for(let i=0; i<vocabList.length; i++) {
+                let w = vocabList[i];
+                const found = 2 - (currentTargets[w.id] || 0);
+                let visual = w.img ? `<img src="${w.img}" style="width:1em;height:1em;object-fit:contain;">` : (w.emoji||'📝');
+                html += '<div class="ho-target-item ' + (found===2?'completed':'') + '"><div style="display:flex;align-items:center;"><span class="ho-target-emoji">' + visual + '</span></div><div style="font-weight:bold;color:var(--primary-color);">' + found + ' / 2 ' + (found===2?'✅':'') + '</div></div>';
+            }
+            document.getElementById('ho-target-list').innerHTML = html;
+        }
+        document.getElementById('ho-retry-btn').onclick = init;
+        document.getElementById('ho-hint-btn').onclick = function() {
+            if(hintsRemaining<=0 || !isGameRunning) return;
+            if(activeHintElement) activeHintElement.classList.remove('hint-anim');
+            const remEls = document.querySelectorAll('.ho-item[data-target-id]');
+            let rem = [];
+            for(let i=0; i<remEls.length; i++) {
+                if(currentTargets[remEls[i].getAttribute('data-target-id')] > 0 && !remEls[i].classList.contains('found-anim')) rem.push(remEls[i]);
+            }
+            if(rem.length > 0) { 
+                hintsRemaining--; updateUI(); 
+                const h = rem[Math.floor(Math.random()*rem.length)]; 
+                h.classList.add('hint-anim'); activeHintElement = h; 
+                setTimeout(function(){ h.classList.remove('hint-anim'); }, 3000); 
+            }
+        };
+        document.getElementById('ho-btn-back').onclick = function() { isGameRunning = false; onExit(); };
+        init(); 
+    }
+
+    // Audio Quiz
+    function startAudioQuizGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div class="header-bar">' +
+                '<button class="btn-common btn-outline" id="aq-btn-back">Back</button>' +
+                '<div style="flex-grow:1;"></div>' +
+            '</div>' +
+            '<div class="aq-quiz-box">' +
+                '<div class="aq-question-card"><div class="aq-question-text" id="aq-question-target"></div></div>' +
+                '<div class="aq-options-container" id="aq-options-area"></div>' +
+                '<div class="aq-stars-container" id="aq-stars-display"></div>' +
+                '<button id="aq-btn-next" class="btn-common" style="display:none; width:120px; margin-top:15px; padding: 15px; font-size: 40px;">👉</button>' +
+            '</div>' +
+            '<div class="game-modal" id="aq-modal">' +
+                '<div class="game-modal-content">' +
+                    '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                    '<button class="btn-common btn-outline" id="aq-btn-exit" style="width:100%; padding: 15px;">Back</button>' +
+                '</div>' +
+            '</div>';
+            
+        let questions = [], currentStep = 0, score = 0, isAnswered = false, totalQuestions = vocabList.length * 2;
+        function init() {
+            let p1 = vocabList.slice().sort(function() { return Math.random() - 0.5; });
+            let p2 = vocabList.slice().sort(function() { return Math.random() - 0.5; });
+            if(p1[p1.length-1].id === p2[0].id) { 
+                let s = p2.length>1 ? 1 : 0; 
+                let temp = p2[0]; p2[0] = p2[s]; p2[s] = temp; 
+            }
+            let allTargets = p1.concat(p2);
+            questions = [];
+            for(let i=0; i<allTargets.length; i++) {
+                let t = allTargets[i];
+                let pool = [];
+                for(let j=0; j<vocabList.length; j++) { if(vocabList[j].id !== t.id) pool.push(vocabList[j]); }
+                if(pool.length < 2 && currentModuleData && currentModuleData.items) {
+                    for(let j=0; j<currentModuleData.items.length; j++) {
+                        let w = currentModuleData.items[j];
+                        let alreadyInPool = false;
+                        for(let pi=0; pi<pool.length; pi++) { if(pool[pi].id === w.id) alreadyInPool = true; }
+                        if(w.id !== t.id && !alreadyInPool) pool.push(w);
+                    }
+                }
+                pool.sort(function() { return Math.random() - 0.5; });
+                let opts = [t];
+                for(let j=0; j<Math.min(2, pool.length); j++) opts.push(pool[j]);
+                opts.sort(function() { return Math.random() - 0.5; });
+                
+                let correctIndex = -1;
+                for(let oi=0; oi<opts.length; oi++) { if(opts[oi].id === t.id) correctIndex = oi; }
+                
+                questions.push({ target: t, options: opts, correctIndex: correctIndex });
+            }
+            currentStep = 0; score = 0; renderQuestion();
+        }
+        function renderQuestion() {
+            isAnswered = false; document.getElementById('aq-btn-next').style.display = 'none';
+            
+            let starsHtml = "";
+            for(let i=0; i<score; i++) starsHtml += "★ ";
+            for(let i=0; i<totalQuestions-score; i++) starsHtml += "☆ ";
+            document.getElementById('aq-stars-display').textContent = starsHtml;
+            
+            const q = questions[currentStep];
+            document.getElementById('aq-question-target').innerHTML = '<div class="aq-ruby-container"><span class="aq-pinyin">' + (q.target.pinyin||'') + '</span><span>' + (q.target.hanzi||'') + '</span></div><button class="aq-audio-btn" id="aq-audio-play-btn">📢</button>';
+            document.getElementById('aq-audio-play-btn').onclick = function() { playVocabAudio(q.target); };
+            
+            const area = document.getElementById('aq-options-area'); area.innerHTML = '';
+            for(let i=0; i<q.options.length; i++) {
+                let opt = q.options[i];
+                let index = i;
+                const btn = document.createElement('button'); btn.className = 'aq-option-btn'; 
+                
+                if(opt.img) {
+    btn.innerHTML = 
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none;">' +
+            '<img src="' + opt.img + '" style="width: 3.5rem; height: 3.5rem; object-fit: contain;">' +
+            '<div style="font-size:0.85rem;color:var(--primary-color);font-weight:bold;line-height:1.1;">' + (opt.en || '') + '</div>' +
+        '</div>';
+} else {
+    btn.innerHTML = 
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none;">' +
+            '<span style="font-size:3.5rem;line-height:1;">' + (opt.emoji||opt.hanzi||'📝') + '</span>' +
+            '<div style="font-size:0.85rem;color:var(--primary-color);font-weight:bold;line-height:1.1;">' + (opt.en || '') + '</div>' +
+        '</div>';
+}
+                
+                btn.onclick = function() {
+                    if(isAnswered) return;
+                    if(index === q.correctIndex){ 
+                        isAnswered=true; score++; btn.classList.add('correct'); playTone(600,0.1); 
+                        document.getElementById('aq-btn-next').style.display='flex'; 
+                        
+                        let sHtml = "";
+                        for(let si=0; si<score; si++) sHtml += "★ ";
+                        for(let si=0; si<totalQuestions-score; si++) sHtml += "☆ ";
+                        document.getElementById('aq-stars-display').textContent = sHtml; 
+                    }
+                    else { 
+                        btn.classList.add('wrong'); playTone(200,0.3,'sawtooth'); 
+                        setTimeout(function(){ btn.classList.remove('wrong'); }, 500); 
+                    }
+                };
+                area.appendChild(btn);
+            }
+            setTimeout(function() { playVocabAudio(q.target); }, 300);
+        }
+        document.getElementById('aq-btn-next').onclick = function() { currentStep++; if(currentStep<totalQuestions) renderQuestion(); else document.getElementById('aq-modal').style.display = 'flex'; };
+        document.getElementById('aq-btn-back').onclick = onExit; document.getElementById('aq-btn-exit').onclick = onExit;
+        init();
+    }
+
+    // Archery
+    function startArcheryGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = 
+            '<div id="archery-container">' +
+                '<button class="btn-common btn-outline" id="archery-btn-back" style="position: absolute; top: 15px; left: 15px; z-index: 1000; padding: 8px 15px;">Back</button>' +
+                '<div class="archery-ambient-bg"></div><div class="archery-noise-overlay"></div>' +
+                '<div id="archery-ui-layer">' +
+                    '<div class="archery-glass-box">Score <span id="archery-score" style="margin-left:10px;">0</span></div>' +
+                    '<div class="archery-glass-box" style="color:#facc15;">Time <span id="archery-timer" style="margin-left:10px;">60</span>s</div>' +
+                '</div>' +
+                '<div id="archery-start-overlay" class="archery-overlay">' +
+                    '<div class="archery-modal-box">' +
+                        '<h2 class="archery-title" style="margin-top:0; font-size: 3rem; color: #fff; font-family: \'Righteous\', cursive;">Archery Game</h2>' +
+                        '<button id="archery-start-btn" class="btn-common" style="font-size: 1.5rem; padding: 15px 40px; border-radius: 50px; margin-left:auto; margin-right:auto;">Start</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="archery-game-over-overlay" class="archery-overlay hidden" style="display:none;">' +
+                    '<div class="archery-modal-box">' +
+                        '<div style="font-size:5rem;line-height:1;margin-bottom:20px;text-align:center;">🏆</div>' +
+                        '<div style="font-size: 3rem; font-weight: bold; color: white; margin-bottom: 20px;">Score <span id="archery-final-score-display">0</span></div>' +
+                        '<button id="archery-restart-btn" class="btn-common" style="font-size: 1.5rem; padding: 15px 40px; border-radius: 50px;">Restart</button>' +
+                    '</div>' +
+                '</div>' +
+                '<canvas id="archery-gameCanvas"></canvas>' +
+            '</div>';
+            
+        const canvas = document.getElementById('archery-gameCanvas'), ctx = canvas.getContext('2d'), scoreElement = document.getElementById('archery-score'), timerElement = document.getElementById('archery-timer');
+        let width, height, score = 0, timeLeft = 60, countdownInterval, hearts = [], arrows = [], particles = [], isGameStarted = false, isDragging = false, dragStart = {x:0,y:0}, dragCurrent = {x:0,y:0}, bowPos = {x:0,y:0}, animationId;
+        
+        function resize() { width = container.clientWidth; height = container.clientHeight; canvas.width = width; canvas.height = height; bowPos = { x: width/2, y: height-160 }; }
+        window.addEventListener('resize', resize); resize();
+        
+        function drawPerfectHeart(ctx, size, color) {
+            ctx.save();
+            ctx.fillStyle = color;
+            if (color === '#1c1c1e') { ctx.shadowColor = 'rgba(255, 255, 255, 0.4)'; ctx.shadowBlur = 30; } 
+            else { ctx.shadowColor = color; ctx.shadowBlur = 15; }
+            ctx.shadowOffsetY = 0;
+
+            ctx.beginPath();
+            for (let t = 0; t <= Math.PI * 2; t += 0.05) {
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+                let px = x * (size / 16); let py = -y * (size / 16);
+                if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath(); ctx.fill();
+
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = color === '#f8f9fa' ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(-size * 0.4, -size * 0.4, size * 0.2, size * 0.4, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function Heart() {
+            this.size = Math.random()*15+25; 
+            this.hitRadius = this.size*1.2; 
+            this.word = vocabList[Math.floor(Math.random()*vocabList.length)];
+            this.x = Math.random()*(width-80)+40; this.baseY = Math.random()*(height*0.4)+60; this.y = this.baseY;
+            const fallbackColors = ['#ff3b30','#ffe600','#007aff','#34c759','#f8f9fa','#1c1c1e','#ff6b00','#af52de'];
+            
+            let isColors = false; if(currentModuleData && currentModuleData.id) isColors = (String(currentModuleData.id).toLowerCase() === 'colors');
+            let hex = fallbackColors[0];
+            if (isColors) {
+                const colorMap = {
+                    'red':'#ff3b30','yellow':'#ffe600','blue':'#007aff','green':'#34c759',
+                    'black':'#1c1c1e','white':'#f8f9fa','orange':'#ff6b00','purple':'#af52de',
+                    'pink':'#FFD1DC','grey':'#8e8e93','gray':'#8e8e93','brown':'#8B4513'
+                };
+                if (colorMap[this.word.id]) hex = colorMap[this.word.id];
+            } else {
+                hex = fallbackColors[Math.floor(Math.random()*fallbackColors.length)];
+            }
+            this.colorObj = {hex: hex};
+            
+            this.timeOffset = Math.random()*Math.PI*2; this.speed = Math.random()*0.015+0.015; this.active = true; this.scale = 0;
+            
+            this.update = function() { this.y = this.baseY + Math.sin(Date.now()*this.speed*0.1+this.timeOffset)*25; if(this.scale<1) this.scale+=0.1; };
+            
+            this.loadedImg = null;
+
+            this.draw = function(ctx) { 
+                ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.scale, this.scale); 
+                
+                if (this.word.img) {
+                    if (!this.loadedImg || this.loadedImg.src !== this.word.img) {
+                        this.loadedImg = new Image();
+                        this.loadedImg.src = this.word.img;
+                    }
+                    if (this.loadedImg.complete) {
+                        let s = this.size * 2.5;
+                        ctx.drawImage(this.loadedImg, -s/2, -s/2, s, s);
+                    }
+                } else if(isColors) {
+                    drawPerfectHeart(ctx, this.size, this.colorObj.hex);
+                } else if(this.word.emoji) { 
+                    ctx.font = (this.size*1.8) + 'px Arial'; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(this.word.emoji,0,0); 
+                } 
+                ctx.restore(); 
+            };
+        }
+        
+        function Arrow(x, y, vx, vy) { 
+            this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.active=true; this.angle=Math.atan2(vy,vx); this.length=220; 
+            this.update = function() { if(!this.active) return; this.x+=this.vx; this.y+=this.vy; if(this.x<-300||this.x>width+300||this.y>height+300) this.active=false; };
+            this.draw = function(ctx) { 
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); 
+                ctx.strokeStyle='#e0e7ff'; ctx.lineWidth=4; ctx.lineCap='round'; 
+                ctx.beginPath(); ctx.moveTo(-this.length,0); ctx.lineTo(0,0); ctx.stroke(); 
+                ctx.fillStyle='#ff2a5f'; ctx.shadowColor='#ff2a5f'; ctx.shadowBlur=10;
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-16,-5); ctx.lineTo(-12,0); ctx.lineTo(-16,5); ctx.fill(); 
+                ctx.shadowColor='transparent'; ctx.strokeStyle='#00f0ff'; ctx.lineWidth=3;
+                ctx.beginPath(); 
+                for(let i=0; i<3; i++) {
+                    let offset = -this.length + 15 + i*10;
+                    ctx.moveTo(offset,0); ctx.lineTo(offset-12,-6);
+                    ctx.moveTo(offset,0); ctx.lineTo(offset-12,6);
+                }
+                ctx.stroke();
+                ctx.restore(); 
+            };
+        }
+        
+        function Particle(x, y, color) { 
+            this.x=x; this.y=y; const a=Math.random()*Math.PI*2, s=Math.random()*12+3; this.vx=Math.cos(a)*s; this.vy=Math.sin(a)*s; this.color=color; this.size=Math.random()*10+6; this.life=1.0; this.decay=Math.random()*0.02+0.01; this.rot=Math.random()*Math.PI*2; 
+            this.update = function() { this.x+=this.vx; this.y+=this.vy; this.vy+=0.4; this.vx*=0.98; this.life-=this.decay; this.rot+=0.1; };
+            this.draw = function(ctx) { 
+                if(this.life<=0) return; 
+                ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.rot); ctx.globalAlpha=this.life; ctx.fillStyle=this.color; ctx.shadowColor=this.color; ctx.shadowBlur=10; ctx.fillRect(-this.size/2,-this.size/2,this.size,this.size); ctx.restore(); 
+            };
+        }
+
+        function getAimAngle(dx, dy) {
+            let a = Math.atan2(dy, dx);
+            const minAngle = -Math.PI * 0.95; 
+            const maxAngle = -Math.PI * 0.05; 
+            if (a >= 0) a = (a < Math.PI / 2) ? maxAngle : minAngle;
+            if (a > maxAngle) a = maxAngle;
+            if (a < minAngle) a = minAngle;
+            return a;
+        }
+
+        function drawAiming() {
+            if (!isDragging) return;
+            const dx = dragStart.x - dragCurrent.x, dy = dragStart.y - dragCurrent.y;
+            let pull = Math.min(Math.sqrt(dx*dx+dy*dy), 150);
+            const a = getAimAngle(dx, dy);
+            
+            ctx.save(); ctx.translate(bowPos.x, bowPos.y); ctx.rotate(a);
+            
+            const flex = pull / 150; 
+            const tipX = 0 - flex * 25;   
+            const tipY = 80 - flex * 10;  
+            const cpX  = 40 - flex * 15;  
+            const handleX = 30;           
+            const tailX = -pull; 
+            const arrowTipX = tailX + 220; 
+
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+            ctx.lineWidth = 2; ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.moveTo(tipX, -tipY); ctx.lineTo(tailX, 0); ctx.lineTo(tipX, tipY); ctx.stroke();
+
+            ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 15;
+            ctx.strokeStyle = '#1e1b2e'; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(tipX, -tipY); ctx.quadraticCurveTo(cpX, -45, handleX, 0); ctx.quadraticCurveTo(cpX, 45, tipX, tipY); ctx.stroke();
+            
+            ctx.shadowColor = 'transparent'; ctx.strokeStyle = '#383259'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(tipX, -tipY); ctx.quadraticCurveTo(cpX, -45, handleX, 0); ctx.quadraticCurveTo(cpX, 45, tipX, tipY); ctx.stroke();
+
+            ctx.strokeStyle = '#09080e'; ctx.lineWidth = 18; ctx.lineCap = 'butt';
+            ctx.beginPath(); ctx.moveTo(handleX + 2, -15); ctx.lineTo(handleX + 2, 15); ctx.stroke();
+
+            ctx.strokeStyle = '#e0e7ff'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(tailX, 0); ctx.lineTo(arrowTipX, 0); ctx.stroke();
+            
+            ctx.fillStyle = '#ff2a5f'; ctx.shadowColor = '#ff2a5f'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.moveTo(arrowTipX, 0); ctx.lineTo(arrowTipX - 16, -5); ctx.lineTo(arrowTipX - 12, 0); ctx.lineTo(arrowTipX - 16, 5); ctx.closePath(); ctx.fill();
+            
+            ctx.shadowColor = 'transparent'; ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < 3; i++) {
+                let offset = tailX + 15 + i * 10;
+                ctx.moveTo(offset, 0); ctx.lineTo(offset - 12, -6);
+                ctx.moveTo(offset, 0); ctx.lineTo(offset - 12, 6);
+            }
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        function drawIdleBow() {
+            if (isDragging) return;
+            ctx.save(); ctx.translate(bowPos.x, bowPos.y); ctx.rotate(-Math.PI/2);
+            
+            const tipX = 0, tipY = 80, cpX = 40, handleX = 30;
+            
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(tipX, -tipY); ctx.lineTo(tipX, tipY); ctx.stroke();
+
+            ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 15;
+            ctx.strokeStyle = '#1e1b2e'; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(tipX, -tipY); ctx.quadraticCurveTo(cpX, -45, handleX, 0); ctx.quadraticCurveTo(cpX, 45, tipX, tipY); ctx.stroke();
+            
+            ctx.shadowColor = 'transparent'; ctx.strokeStyle = '#383259'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(tipX, -tipY); ctx.quadraticCurveTo(cpX, -45, handleX, 0); ctx.quadraticCurveTo(cpX, 45, tipX, tipY); ctx.stroke();
+
+            ctx.strokeStyle = '#09080e'; ctx.lineWidth = 18; ctx.lineCap = 'butt';
+            ctx.beginPath(); ctx.moveTo(handleX + 2, -15); ctx.lineTo(handleX + 2, 15); ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        function loop() {
+            if(!document.getElementById('archery-gameCanvas')) return;
+            ctx.clearRect(0,0,width,height);
+            
+            let aliveHearts = [];
+            for(let i=0; i<hearts.length; i++) {
+                if(hearts[i].active) { hearts[i].update(); hearts[i].draw(ctx); aliveHearts.push(hearts[i]); }
+            }
+            hearts = aliveHearts;
+            
+            if(width>100 && isGameStarted) {
+                while(hearts.length<8) hearts.push(new Heart());
+            }
+            
+            let aliveParticles = [];
+            for(let i=0; i<particles.length; i++) {
+                if(particles[i].life>0) { particles[i].update(); particles[i].draw(ctx); aliveParticles.push(particles[i]); }
+            }
+            particles = aliveParticles;
+            
+            let aliveArrows = [];
+            for(let i=0; i<arrows.length; i++) {
+                if(arrows[i].active) { arrows[i].update(); arrows[i].draw(ctx); aliveArrows.push(arrows[i]); }
+            }
+            arrows = aliveArrows;
+            
+            drawIdleBow();
+            drawAiming();
+            
+            for(let i=0; i<arrows.length; i++) {
+                let ar = arrows[i];
+                if(ar.active) {
+                    for(let j=0; j<hearts.length; j++) {
+                        let h = hearts[j];
+                        if(h.active && Math.sqrt(Math.pow(ar.x-h.x,2)+Math.pow(ar.y-h.y,2))<h.hitRadius) {
+                            h.active=false; ar.active=false; score+=10; scoreElement.innerText=score; 
+                            playShatterSound(); 
+                            setTimeout(function(){ playVocabAudio(h.word); }, 100);
+                            for(let k=0; k<15; k++) particles.push(new Particle(h.x, h.y, h.colorObj.hex));
+                        }
+                    }
+                }
+            }
+            animationId = requestAnimationFrame(loop);
+        }
+
+        function startEngine() {
+            score=0; timeLeft=60; hearts=[]; arrows=[]; particles=[]; scoreElement.innerText=0; timerElement.innerText=60; isGameStarted=true;
+            clearInterval(countdownInterval); 
+            countdownInterval = setInterval(function() { 
+                timeLeft--; timerElement.innerText=timeLeft; 
+                if(timeLeft<=0){ 
+                    isGameStarted=false; isDragging=false; clearInterval(countdownInterval); 
+                    document.getElementById('archery-final-score-display').innerText=score; 
+                    document.getElementById('archery-game-over-overlay').style.display='flex'; document.getElementById('archery-game-over-overlay').classList.remove('hidden'); 
+                } 
+            }, 1000);
+        }
+
+        document.getElementById('archery-start-btn').onclick = function() { startEngine(); document.getElementById('archery-start-overlay').style.display='none'; };
+        document.getElementById('archery-restart-btn').onclick = function() { startEngine(); document.getElementById('archery-game-over-overlay').style.display='none'; };
+        
+        const handleDown = function(e) { if(!isGameStarted)return; isDragging=true; dragStart={x:e.clientX||e.touches[0].clientX, y:e.clientY||e.touches[0].clientY}; dragCurrent={x:dragStart.x, y:dragStart.y}; };
+        const handleMove = function(e) { if(!isDragging)return; dragCurrent={x:e.clientX||e.touches[0].clientX, y:e.clientY||e.touches[0].clientY}; };
+        const handleUp = function() {
+            if(!isDragging)return; isDragging=false; let dx=dragStart.x-dragCurrent.x, dy=dragStart.y-dragCurrent.y, d=Math.sqrt(dx*dx+dy*dy);
+            if(d>20) { 
+                let a=getAimAngle(dx, dy);
+                let lengthVal = Math.min(d,150);
+                arrows.push(new Arrow(bowPos.x+Math.cos(a)*(-lengthVal+220), bowPos.y+Math.sin(a)*(-lengthVal+220), Math.cos(a)*lengthVal*0.375, Math.sin(a)*lengthVal*0.375)); 
+            }
+        };
+
+        const eventTarget = document.getElementById('archery-container');
+        eventTarget.addEventListener('mousedown', handleDown); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleUp);
+        eventTarget.addEventListener('touchstart', handleDown, {passive:false}); eventTarget.addEventListener('touchmove', handleMove, {passive:false}); eventTarget.addEventListener('touchend', handleUp);
+        
+        document.getElementById('archery-btn-back').onclick = function() { isGameStarted=false; clearInterval(countdownInterval); cancelAnimationFrame(animationId); window.removeEventListener('resize', resize); window.removeEventListener('mousemove', handleMove); window.removeEventListener('mouseup', handleUp); onExit(); };
+        loop();
+    }
+</script>
+</body>
+</html>
