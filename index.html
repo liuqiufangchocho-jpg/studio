@@ -512,7 +512,7 @@
         const container = document.getElementById('module-list-container');
         container.innerHTML = '';
         
-        const moduleOrder = ['Animals','Body Parts','Clothing','Colors','Countries','Daily Life','Electric Device','Family','Food and Beverage','Fruits','Furniture and Stationery','Numbers','Places','Professions','Sports','Subjects','Time','Vegetables','Vehicles','Weather'];
+        const moduleOrder = ['Animals','Body Parts','Clothing','Colors','Countries','Daily Life','Electric Device','Family','Food and Beverage','Fruits','Furniture and Stationery','Numbers','Places','Professions','Sports','Subjects','Time','Vegetables','Vehicles','Weather and Sky'];
         const orderedModules = modulesArray.slice().sort(function(a, b) {
             const nameA = (a && (a.nameEn || a.name || a.title)) ? String(a.nameEn || a.name || a.title) : '';
             const nameB = (b && (b.nameEn || b.name || b.title)) ? String(b.nameEn || b.name || b.title) : '';
@@ -649,8 +649,17 @@ function updateWordSelectUI() {
                 "12 o'clock": 12,
                 "early morning": 13,
                 "morning": 14,
-                "afternoon": 15,
-                "evening": 16
+                "noon": 15,
+                "afternoon": 16,
+                "daytime": 17,
+                "evening": 18,
+                "Monday": 19,
+                "Tuesday": 20,
+                "Wednesday": 21,
+                "Thursday": 22,
+                "Friday": 23,
+                "Saturday": 24,
+                "Sunday": 25
             };
 
             const keyA = String(a.en || a.id || '').toLowerCase();
