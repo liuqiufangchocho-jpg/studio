@@ -1,7 +1,7 @@
 // 统一的词库数据中心 (vocabData.js) - 绝对并集版 (基础 + CCG + HSK/YCT)
 const CATEGORIES = {
   animals: {
-    id: 'animals', name: '动物', nameEn: 'Animals', icon: './zoo.png',
+    id: 'animals', name: '动物', nameEn: 'Animals', icon: '🐼',
     items: [
       { id: 'cat', hanzi: '猫', pinyin: 'māo', emoji: '🐱', en: 'cat', isCore: true, isCCG: true },
       { id: 'dog', hanzi: '狗', pinyin: 'gǒu', emoji: '🐶', en: 'dog', isCore: true, isCCG: true },
