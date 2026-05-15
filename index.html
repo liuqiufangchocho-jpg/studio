@@ -10,6 +10,7 @@
     
     <script src="vocabData.js"></script>
     <script src="bgmData.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
         window.CATEGORIES = window.CATEGORIES || (typeof CATEGORIES !== 'undefined' ? CATEGORIES : {
@@ -332,6 +333,10 @@
                 <div class="game-card-top"><span class="game-emoji">🎲</span><span class="game-name">Monopoly Game</span></div>
                 <div class="game-desc">Roll the dice and race to the finish line.</div>
             </div>
+            <div class="game-card-new" id="btn-play-oraltest">
+                <div class="game-card-top"><span class="game-emoji">🎤</span><span class="game-name">Oral Test</span></div>
+                <div class="game-desc">Record your voice and play it back.</div>
+            </div>
             <div class="game-card-new" id="btn-play-snake">
                 <div class="game-card-top"><span class="game-emoji">🐍</span><span class="game-name">Snake Game</span></div>
                 <div class="game-desc">Control the snake to eat items.</div>
@@ -351,14 +356,23 @@
                 <div style="width: 80px;"></div> 
             </div>
 
-            <div class="available-words-area">
-                <div class="vocab-grid" id="available-vocab-container"></div>
-            </div>
+<div style="width:100%; margin-bottom:12px;">
+    <input 
+        id="word-search-input"
+        type="text"
+        placeholder="Search by Chinese characters, pinyin, or English"
+        style="width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid var(--border-color); border-radius:12px; font-size:1rem; font-family:inherit; outline:none;"
+    >
+</div>
+
+<div class="available-words-area">
+    <div class="vocab-grid" id="available-vocab-container"></div>
+</div>
 
             <div class="selected-words-area">
                 <div class="selected-words-header">
                     <span><span id="selected-count-display">0</span>/10</span>
-                    <button class="btn-common" id="btn-start-selected-game" disabled style="font-size: 1.5rem; padding: 10px 30px;">Start</button>
+                    <button class="btn-common" id="btn-start-selected-game" disabled style="font-size: 1.5rem; padding: 10px 30px;">Next</button>
                 </div>
                 <div class="vocab-grid" id="selected-vocab-container" style="min-height: 120px;"></div>
             </div>
@@ -385,7 +399,10 @@
                 else { modulesArray = Object.values(safeCategories); }
             }
 
-            if (modulesArray.length > 0) { renderMainMenu(); }
+            if (modulesArray.length > 0) {
+                renderMainMenu();
+                handleDeepLink();
+            }
         } catch (e) {
             document.body.innerHTML = '<div style="color: red; padding: 20px;">Error</div>';
         }
@@ -405,27 +422,81 @@
         if (views[viewName]) views[viewName].classList.add('active');
     }
 
-    function playVocabAudio(item) {
-        if (!item) return;
-        if (item.audio) {
-            try {
-                const audioObj = new Audio(item.audio);
-                audioObj.play().catch(function(e) { fallbackTTS(item.hanzi); });
-            } catch (e) { fallbackTTS(item.hanzi); }
-        } else if (item.hanzi) {
-            fallbackTTS(item.hanzi);
-        }
+function playVocabAudio(item) {
+    if (!item) return;
+
+    const text = item.hanzi || '';
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
     }
 
-    function fallbackTTS(text) {
-        if (!text) return;
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
+    if (item.audio) {
+        try {
+            const audioObj = new Audio();
+            let hasFallback = false;
+
+            function runFallback() {
+                if (hasFallback) return;
+                hasFallback = true;
+                fallbackTTS(text);
+            }
+
+            audioObj.onerror = runFallback;
+            audioObj.onstalled = runFallback;
+            audioObj.src = item.audio;
+
+            const playPromise = audioObj.play();
+
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(function() {
+                    runFallback();
+                });
+            }
+        } catch (e) {
+            fallbackTTS(text);
+        }
+    } else if (text) {
+        fallbackTTS(text);
+    }
+}
+
+function fallbackTTS(text) {
+    if (!text) return;
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+
+        function speakNow() {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+
+            const voices = window.speechSynthesis.getVoices();
+            for (let i = 0; i < voices.length; i++) {
+                if (
+                    voices[i].lang &&
+                    voices[i].lang.toLowerCase().indexOf('zh') === 0
+                ) {
+                    utterance.voice = voices[i];
+                    break;
+                }
+            }
+
+            window.speechSynthesis.resume();
             window.speechSynthesis.speak(utterance);
         }
+
+        const voices = window.speechSynthesis.getVoices();
+
+        if (voices.length === 0) {
+            setTimeout(speakNow, 150);
+        } else {
+            speakNow();
+        }
     }
+}
 
     function playTone(freq, duration, type) {
         type = type || 'sine';
@@ -512,14 +583,21 @@
         const container = document.getElementById('module-list-container');
         container.innerHTML = '';
         
-        const moduleOrder = ['Animals','Body Parts','Clothing','Colors','Countries','Daily Life','Electric Device','Family','Food and Beverage','Fruits','Furniture and Stationery','Numbers','Places','Professions','Sports','Subjects','Time','Vegetables','Vehicles','Weather and Sky'];
-        const orderedModules = modulesArray.slice().sort(function(a, b) {
-            const nameA = (a && (a.nameEn || a.name || a.title)) ? String(a.nameEn || a.name || a.title) : '';
-            const nameB = (b && (b.nameEn || b.name || b.title)) ? String(b.nameEn || b.name || b.title) : '';
-            const indexA = moduleOrder.indexOf(nameA);
-            const indexB = moduleOrder.indexOf(nameB);
-            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-        });
+        const moduleOrder = ['Animals','Body Parts','Clothing','Colors','Countries','Daily Life','Electric Device','Family','Food and Beverage','Fruits','Furniture and Stationery','Numbers','Places','Professions','Sports','Subjects','Time','Vegetables','Vehicles','Weather and Seasons'];
+const orderedModules = modulesArray.slice().sort(function(a, b) {
+    const idA = String(a && a.id ? a.id : '').toLowerCase();
+    const idB = String(b && b.id ? b.id : '').toLowerCase();
+
+    if (idA === 'customized_words') return 1;
+    if (idB === 'customized_words') return -1;
+
+    const nameA = (a && (a.nameEn || a.name || a.title)) ? String(a.nameEn || a.name || a.title) : '';
+    const nameB = (b && (b.nameEn || b.name || b.title)) ? String(b.nameEn || b.name || b.title) : '';
+    const indexA = moduleOrder.indexOf(nameA);
+    const indexB = moduleOrder.indexOf(nameB);
+
+    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+});
         orderedModules.forEach(function(module) {
             if (!module || typeof module !== 'object') return;
             const card = document.createElement('div');
@@ -537,49 +615,284 @@ card.innerHTML = '<div class="module-icon">' + iconContent + '</div>' +
                  '<div class="module-title">' + displayName + '</div>';
             card.onclick = function() {
                 currentModuleData = module;
-                document.getElementById('select-module-title').textContent = displayName;
-                
-                const modId = String(module.id || '').toLowerCase();
-                
-                const snakeBtn = document.getElementById('btn-play-snake');
-                const noSnakeModules = ['body_parts', 'countries', 'daily_life', 'family', 'professions'];
-                if (noSnakeModules.indexOf(modId) !== -1) {
-                    if (snakeBtn) snakeBtn.style.display = 'none';
-                } else {
-                    if (snakeBtn) snakeBtn.style.display = 'flex';
-                }
-
-                const archeryBtn = document.getElementById('btn-play-archery');
-                const noArcheryModules = ['animals', 'body_parts', 'clothes', 'countries', 'daily_life', 'family', 'places', 'professions', 'clothing', 'sports', 'vehicles'];
-                if (noArcheryModules.indexOf(modId) !== -1) {
-                    if (archeryBtn) archeryBtn.style.display = 'none';
-                } else {
-                    if (archeryBtn) archeryBtn.style.display = 'flex';
-                }
-
-                switchView('gameSelect');
+                currentTargetGame = '';
+                initWordSelect();
+                updateDeepLinkUrl(false);
             };
             container.appendChild(card);
         });
     }
 
-    document.getElementById('btn-back-from-select').onclick = function() { switchView('menu'); };
-    document.getElementById('btn-play-archery').onclick = function() { currentTargetGame = 'archery'; initWordSelect(); };
-    document.getElementById('btn-play-audioquiz').onclick = function() { currentTargetGame = 'audioquiz'; initWordSelect(); };
-    document.getElementById('btn-play-hidden').onclick = function() { currentTargetGame = 'hidden'; initWordSelect(); };
-    document.getElementById('btn-play-linkup').onclick = function() { currentTargetGame = 'linkup'; initWordSelect(); };
-    document.getElementById('btn-play-match2').onclick = function() { currentTargetGame = 'match2'; initWordSelect(); };
-    document.getElementById('btn-play-memory').onclick = function() { currentTargetGame = 'memory'; initWordSelect(); };
-    document.getElementById('btn-play-monopoly').onclick = function() { currentTargetGame = 'monopoly'; initWordSelect(); };
-    document.getElementById('btn-play-snake').onclick = function() { currentTargetGame = 'snake'; initWordSelect(); };
-    document.getElementById('btn-play-tictactoe').onclick = function() { currentTargetGame = 'tictactoe'; initWordSelect(); };
+    function getModuleDisplayName(module) {
+        if (!module) return '';
+        return module.nameEn || module.name || module.title || 'Unknown';
+    }
 
-    document.getElementById('btn-back-from-word-select').onclick = function() { switchView('gameSelect'); };
+    function getModuleKey(module) {
+        if (!module) return '';
+        return String(module.id || module.nameEn || module.name || module.title || '').trim();
+    }
 
-    function initWordSelect() {
-        selectedWords = [];
-        updateWordSelectUI();
+    function normalizeDeepLinkValue(value) {
+        return String(value || '').trim().toLowerCase().replace(/\s+/g, '').replace(/[-_]/g, '');
+    }
+
+    function getUnavailableGameIds(module) {
+        const modId = String(module && module.id ? module.id : '').toLowerCase();
+        const unavailable = [];
+        const noSnakeModules = ['body_parts', 'countries', 'daily_life', 'family', 'professions'];
+        const noArcheryModules = ['animals', 'body_parts', 'clothes', 'countries', 'daily_life', 'family', 'places', 'professions', 'clothing', 'sports', 'vehicles'];
+
+        if (noSnakeModules.indexOf(modId) !== -1) unavailable.push('snake');
+        if (noArcheryModules.indexOf(modId) !== -1) unavailable.push('archery');
+
+        return unavailable;
+    }
+
+    function isGameAvailableForCurrentModule(gameId) {
+        const unavailable = getUnavailableGameIds(currentModuleData);
+        return unavailable.indexOf(gameId) === -1;
+    }
+
+    function applyGameAvailability() {
+        const gameIds = ['archery', 'audioquiz', 'hidden', 'linkup', 'match2', 'memory', 'monopoly', 'snake', 'tictactoe', 'oraltest'];
+        const unavailable = getUnavailableGameIds(currentModuleData);
+
+        for (let i = 0; i < gameIds.length; i++) {
+            const gameId = gameIds[i];
+            const btn = document.getElementById('btn-play-' + gameId);
+            if (!btn) continue;
+            btn.style.display = unavailable.indexOf(gameId) !== -1 ? 'none' : 'flex';
+        }
+    }
+
+    function updateDeepLinkUrl(includeGame) {
+        if (!currentModuleData || !window.history || !window.history.replaceState) return;
+
+        const params = new URLSearchParams();
+        params.set('module', getModuleKey(currentModuleData));
+
+        if (selectedWords.length > 0) {
+            const wordIds = [];
+            for (let i = 0; i < selectedWords.length; i++) {
+                if (selectedWords[i] && selectedWords[i].id) wordIds.push(selectedWords[i].id);
+            }
+            if (wordIds.length > 0) params.set('words', wordIds.join(','));
+        }
+
+        if (includeGame && currentTargetGame) {
+            params.set('game', currentTargetGame);
+        }
+
+        const newUrl = window.location.pathname + '?' + params.toString();
+        window.history.replaceState(null, '', newUrl);
+    }
+
+    function clearDeepLinkUrl() {
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }
+
+    function showGameSelect() {
+        if (!currentModuleData) return;
+        document.getElementById('select-module-title').textContent = getModuleDisplayName(currentModuleData);
+        applyGameAvailability();
+        updateDeepLinkUrl(false);
+        switchView('gameSelect');
+    }
+
+function initWordSelect() {
+    selectedWords = [];
+
+    const searchInput = document.getElementById('word-search-input');
+    if (searchInput) searchInput.value = '';
+
+    updateWordSelectUI();
+    switchView('wordSelect');
+}
+
+    function launchSelectedGame() {
+        if (!currentTargetGame || !isGameAvailableForCurrentModule(currentTargetGame)) {
+            showGameSelect();
+            return;
+        }
+
+        if (!selectedWords || selectedWords.length < 2) {
+            switchView('wordSelect');
+            return;
+        }
+
+        updateDeepLinkUrl(true);
+
+        if (currentTargetGame === 'oraltest') {
+            stopBGM();
+        } else {
+            startBGM();
+        }
+
+        switchView('game');
+        document.getElementById('view-game').style.padding = '0';
+        const exitHandler = function() {
+            stopBGM();
+            showGameSelect();
+        };
+
+        if (currentTargetGame === 'monopoly') startMonopolyGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'memory') { document.getElementById('view-game').style.padding = '20px'; startMemoryMatchGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'tictactoe') { document.getElementById('view-game').style.padding = '20px'; startTicTacToeGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'snake') { document.getElementById('view-game').style.padding = '20px'; startSnakeGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'linkup') startLinkupGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'match2') startMatch2Game(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'hidden') startHiddenObjectGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'audioquiz') { document.getElementById('view-game').style.padding = '20px'; startAudioQuizGame(selectedWords, 'view-game', exitHandler); }
+        else if (currentTargetGame === 'archery') startArcheryGame(selectedWords, 'view-game', exitHandler);
+        else if (currentTargetGame === 'oraltest') {
+            document.getElementById('view-game').style.padding = '0';
+            startOralTestGame(selectedWords, 'view-game', exitHandler);
+        }
+    }
+
+    function selectGameAndLaunch(gameId) {
+        currentTargetGame = gameId;
+        launchSelectedGame();
+    }
+
+    document.getElementById('btn-back-from-select').onclick = function() {
+        currentTargetGame = '';
+        updateDeepLinkUrl(false);
         switchView('wordSelect');
+    };
+    document.getElementById('btn-play-archery').onclick = function() { selectGameAndLaunch('archery'); };
+    document.getElementById('btn-play-audioquiz').onclick = function() { selectGameAndLaunch('audioquiz'); };
+    document.getElementById('btn-play-hidden').onclick = function() { selectGameAndLaunch('hidden'); };
+    document.getElementById('btn-play-linkup').onclick = function() { selectGameAndLaunch('linkup'); };
+    document.getElementById('btn-play-match2').onclick = function() { selectGameAndLaunch('match2'); };
+    document.getElementById('btn-play-memory').onclick = function() { selectGameAndLaunch('memory'); };
+    document.getElementById('btn-play-monopoly').onclick = function() { selectGameAndLaunch('monopoly'); };
+    document.getElementById('btn-play-snake').onclick = function() { selectGameAndLaunch('snake'); };
+    document.getElementById('btn-play-tictactoe').onclick = function() { selectGameAndLaunch('tictactoe'); };
+    document.getElementById('btn-play-oraltest').onclick = function() { selectGameAndLaunch('oraltest'); };
+
+    document.getElementById('btn-back-from-word-select').onclick = function() {
+        currentModuleData = null;
+        currentTargetGame = '';
+        selectedWords = [];
+        clearDeepLinkUrl();
+        switchView('menu');
+    };
+const wordSearchInput = document.getElementById('word-search-input');
+if (wordSearchInput) {
+    wordSearchInput.addEventListener('input', function() {
+        updateWordSelectUI();
+    });
+}
+
+    document.getElementById('btn-start-selected-game').onclick = function() {
+        if (selectedWords.length >= 2 && selectedWords.length <= 10) {
+            currentTargetGame = '';
+            showGameSelect();
+        }
+    };
+
+    function handleDeepLink() {
+        const params = new URLSearchParams(window.location.search);
+        const moduleParam = params.get('module');
+        const wordsParam = params.get('words');
+        const gameParam = params.get('game');
+
+        if (!moduleParam) return;
+
+        const targetModuleKey = normalizeDeepLinkValue(moduleParam);
+        let targetModule = null;
+
+        for (let i = 0; i < modulesArray.length; i++) {
+            const module = modulesArray[i];
+            if (!module) continue;
+
+            const possibleKeys = [module.id, module.nameEn, module.name, module.title];
+            for (let j = 0; j < possibleKeys.length; j++) {
+                if (normalizeDeepLinkValue(possibleKeys[j]) === targetModuleKey) {
+                    targetModule = module;
+                    break;
+                }
+            }
+            if (targetModule) break;
+        }
+
+        if (!targetModule || !targetModule.items) return;
+
+        currentModuleData = targetModule;
+        selectedWords = [];
+
+        if (wordsParam) {
+            const wordKeys = wordsParam.split(',').map(function(word) {
+                return normalizeDeepLinkValue(word);
+            }).filter(function(word) {
+                return word !== '';
+            });
+
+            for (let i = 0; i < wordKeys.length; i++) {
+                const wordKey = wordKeys[i];
+                for (let j = 0; j < targetModule.items.length; j++) {
+                    const item = targetModule.items[j];
+                    const possibleWordKeys = [item.id, item.hanzi, item.en];
+                    let matched = false;
+
+                    for (let k = 0; k < possibleWordKeys.length; k++) {
+                        if (normalizeDeepLinkValue(possibleWordKeys[k]) === wordKey) {
+                            matched = true;
+                            break;
+                        }
+                    }
+
+                    if (matched) {
+                        let alreadySelected = false;
+                        for (let s = 0; s < selectedWords.length; s++) {
+                            if (String(selectedWords[s].id) === String(item.id)) alreadySelected = true;
+                        }
+                        if (!alreadySelected && selectedWords.length < 10) selectedWords.push(item);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (selectedWords.length >= 2 && gameParam) {
+            const targetGame = normalizeDeepLinkValue(gameParam);
+            const gameMap = {
+                archery: 'archery',
+                audioquiz: 'audioquiz',
+                hidden: 'hidden',
+                hiddenobject: 'hidden',
+                linkup: 'linkup',
+                match2: 'match2',
+                memory: 'memory',
+                memorymatch: 'memory',
+                monopoly: 'monopoly',
+                snake: 'snake',
+                tictactoe: 'tictactoe',
+                oraltest: 'oraltest',
+                oral: 'oraltest',
+                chineseoraltest: 'oraltest'
+            };
+            currentTargetGame = gameMap[targetGame] || '';
+
+            if (currentTargetGame && isGameAvailableForCurrentModule(currentTargetGame)) {
+                updateWordSelectUI();
+                launchSelectedGame();
+                return;
+            }
+        }
+
+        updateWordSelectUI();
+
+        if (selectedWords.length >= 2) {
+            showGameSelect();
+        } else {
+            switchView('wordSelect');
+            updateDeepLinkUrl(false);
+        }
     }
 
     function toggleWordSelection(id) {
@@ -599,6 +912,7 @@ card.innerHTML = '<div class="module-icon">' + iconContent + '</div>' +
             selectedWords.push(item);
         }
         updateWordSelectUI();
+        updateDeepLinkUrl(false);
     }
 
 function updateWordSelectUI() {
@@ -697,11 +1011,70 @@ function updateWordSelectUI() {
 
             return orderA - orderB;
         }
+if (modId === 'weather_and_seasons' || modId === 'weatherandseasons' || modName === 'weather and seasons') {
+    const weatherSeasonOrder = {
+        '天气': 1,
+        '晴天': 2,
+        '阴天': 3,
+        '刮风': 4,
+        '下雨': 5,
+        '下雪': 6,
+        '多云': 7,
+        '打雷': 8,
+        '闪电': 9,
+        '有雾': 10,
+        '龙卷风': 11,
+        '沙尘暴': 12,
+        '彩虹': 13,
+        '雨伞': 14,
+        '天空': 15,
+        '太阳': 16,
+        '月亮': 17,
+        '星星': 18,
+        '云': 19,
+        '春天': 20,
+        '夏天': 21,
+        '秋天': 22,
+        '冬天': 23
+    };
 
+    const keyA = String(a.hanzi || '').trim();
+    const keyB = String(b.hanzi || '').trim();
+
+    const orderA = weatherSeasonOrder.hasOwnProperty(keyA) ? weatherSeasonOrder[keyA] : 999;
+    const orderB = weatherSeasonOrder.hasOwnProperty(keyB) ? weatherSeasonOrder[keyB] : 999;
+
+    return orderA - orderB;
+}
         return String(a.pinyin || '').localeCompare(String(b.pinyin || ''));
     }
 
-    const sortedAvailable = currentModuleData.items.slice().sort(sortWordsForCurrentModule);
+    function normalizeSearchText(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, '');
+}
+
+const searchInput = document.getElementById('word-search-input');
+const searchTextRaw = searchInput ? String(searchInput.value || '').trim().toLowerCase() : '';
+const searchText = normalizeSearchText(searchTextRaw);
+
+const sortedAvailable = currentModuleData.items.slice().filter(function(item) {
+    if (!searchText) return true;
+
+    const rawText = [
+        item.hanzi || '',
+        item.pinyin || '',
+        item.en || '',
+        item.id || ''
+    ].join(' ').toLowerCase();
+
+    const normalizedText = normalizeSearchText(rawText);
+
+    return rawText.indexOf(searchTextRaw) !== -1 || normalizedText.indexOf(searchText) !== -1;
+}).sort(sortWordsForCurrentModule);
     selectedWords.sort(sortWordsForCurrentModule);
 
     const selectedContainer = document.getElementById('selected-vocab-container');
@@ -751,23 +1124,6 @@ function updateWordSelectUI() {
         };
     }
 }
-
-    document.getElementById('btn-start-selected-game').onclick = function() {
-        startBGM(); 
-        switchView('game');
-        document.getElementById('view-game').style.padding = '0'; 
-        const exitHandler = function() { stopBGM(); switchView('wordSelect'); };
-
-        if (currentTargetGame === 'monopoly') startMonopolyGame(selectedWords, 'view-game', exitHandler);
-        else if (currentTargetGame === 'memory') { document.getElementById('view-game').style.padding = '20px'; startMemoryMatchGame(selectedWords, 'view-game', exitHandler); }
-        else if (currentTargetGame === 'tictactoe') { document.getElementById('view-game').style.padding = '20px'; startTicTacToeGame(selectedWords, 'view-game', exitHandler); }
-        else if (currentTargetGame === 'snake') { document.getElementById('view-game').style.padding = '20px'; startSnakeGame(selectedWords, 'view-game', exitHandler); }
-        else if (currentTargetGame === 'linkup') startLinkupGame(selectedWords, 'view-game', exitHandler);
-        else if (currentTargetGame === 'match2') startMatch2Game(selectedWords, 'view-game', exitHandler);
-        else if (currentTargetGame === 'hidden') startHiddenObjectGame(selectedWords, 'view-game', exitHandler);
-        else if (currentTargetGame === 'audioquiz') { document.getElementById('view-game').style.padding = '20px'; startAudioQuizGame(selectedWords, 'view-game', exitHandler); }
-        else if (currentTargetGame === 'archery') startArcheryGame(selectedWords, 'view-game', exitHandler);
-    };
 
     // Monopoly
     function startMonopolyGame(vocabList, containerId, onExit) {
@@ -1861,11 +2217,348 @@ if (cell.data.imgObj && cell.data.imgObj.complete) {
                 };
                 area.appendChild(btn);
             }
-            setTimeout(function() { playVocabAudio(q.target); }, 300);
+            // setTimeout(function() { playVocabAudio(q.target); }, 300);
         }
         document.getElementById('aq-btn-next').onclick = function() { currentStep++; if(currentStep<totalQuestions) renderQuestion(); else document.getElementById('aq-modal').style.display = 'flex'; };
         document.getElementById('aq-btn-back').onclick = onExit; document.getElementById('aq-btn-exit').onclick = onExit;
         init();
+    }
+
+
+    // Oral Test
+    function startOralTestGame(vocabList, containerId, onExit) {
+        const container = document.getElementById(containerId);
+
+        container.innerHTML =
+            '<div id="oral-test-container" style="width:100%;height:100%;background:#FDF5E6;display:flex;flex-direction:column;overflow:hidden;font-family:Arial, Microsoft YaHei, sans-serif;position:relative;">' +
+                '<div id="oral-auth-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.78);display:flex;align-items:center;justify-content:center;z-index:5000;padding:20px;box-sizing:border-box;">' +
+                    '<div style="background:white;color:#2C3E50;padding:34px;border-radius:28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.25);">' +
+                        '<div style="font-size:4rem;margin-bottom:14px;">🎤</div>' +
+                        '<h2 style="margin:0 0 10px 0;font-size:1.8rem;">Microphone Access</h2>' +
+                        '<p style="color:#64748b;font-size:1rem;line-height:1.5;margin:0 0 22px 0;">Please allow microphone access to record your voice.</p>' +
+                        '<button id="oral-confirm-auth-btn" class="btn-common" style="width:100%;font-size:1.2rem;padding:14px;">Authorize & Start</button>' +
+                        '<button id="oral-auth-back-btn" class="btn-common btn-outline" style="width:100%;font-size:1rem;padding:12px;margin-top:12px;">Back</button>' +
+                    '</div>' +
+                '</div>' +
+
+                '<div style="height:64px;background:white;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 2px 8px rgba(0,0,0,0.05);box-sizing:border-box;flex-shrink:0;">' +
+                    '<button class="btn-common btn-outline" id="oral-btn-back" style="padding:8px 15px;">Back</button>' +
+                    '<div style="text-align:center;flex:1;padding:0 10px;">' +
+                        '<div style="font-weight:900;color:#2D5A27;font-size:1.2rem;">Chinese Oral Test</div>' +
+                        '<div style="font-size:0.78rem;color:#D2691E;font-weight:bold;">Click the microphone to start recording, click again to stop. Use Play Back to hear your recording.</div>' +
+                    '</div>' +
+                    '<div style="background:#F7FFF2;border:1px solid #7FB069;color:#2D5A27;padding:6px 12px;border-radius:999px;font-weight:bold;white-space:nowrap;">Progress: <span id="oral-score-val">0</span>/' + vocabList.length + '</div>' +
+                '</div>' +
+
+                '<div style="display:grid;grid-template-columns:1.15fr 1fr;flex:1;min-height:0;" id="oral-main-layout">' +
+                    '<div style="overflow-y:auto;background:rgba(253,245,230,0.65);border-right:1px solid var(--border-color);">' +
+                        '<div id="oral-card-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:14px;padding:20px;align-content:start;"></div>' +
+                    '</div>' +
+
+                    '<div style="background:#2C3E50;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;position:relative;overflow:hidden;">' +
+                        '<div id="oral-empty-hint" style="color:#94a3b8;">' +
+                            '<div style="font-size:4.5rem;margin-bottom:12px;">🎤</div>' +
+                            '<div style="font-size:1.3rem;font-weight:bold;">Click on a card to start!</div>' +
+                        '</div>' +
+
+                        '<div id="oral-active-zone" class="hidden" style="width:100%;max-width:560px;">' +
+                            '<div style="display:flex;align-items:center;justify-content:center;gap:34px;margin-bottom:34px;flex-wrap:wrap;">' +
+                                '<div style="display:flex;flex-direction:column;align-items:center;">' +
+                                    '<div id="oral-display-pinyin" style="color:#81C784;font-size:1.5rem;font-style:italic;margin-bottom:6px;"></div>' +
+                                    '<div id="oral-display-hanzi" style="font-size:clamp(3.5rem,8vw,5.5rem);font-weight:900;line-height:1.05;"></div>' +
+                                '</div>' +
+                                '<div id="oral-display-visual" style="font-size:clamp(4rem,9vw,6rem);line-height:1;"></div>' +
+                            '</div>' +
+
+                            '<div id="oral-mic-trigger" style="width:110px;height:110px;background:#E57373;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px auto;color:white;cursor:pointer;box-shadow:0 12px 25px rgba(0,0,0,0.25);transition:transform 0.15s, background 0.2s;">' +
+                                '<div style="font-size:3rem;">🎤</div>' +
+                            '</div>' +
+
+                            '<div id="oral-msg-feedback" style="font-size:1.4rem;font-weight:bold;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:#81C784;"></div>' +
+
+'<button id="oral-play-back-btn" class="btn-common hidden" style="background:#34495E;margin:0 auto;padding:14px 28px;font-size:1.15rem;">▶ Play Back</button>' +
+'<button id="oral-finish-test-btn" class="btn-common hidden" style="background:#7FB069;margin:14px auto 0 auto;padding:14px 28px;font-size:1.15rem;">Finish Test</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+
+                '<div id="oral-cert-modal" style="position:absolute;inset:0;background:rgba(0,0,0,0.88);display:none;align-items:center;justify-content:center;z-index:3000;padding:18px;box-sizing:border-box;">' +
+                    '<div style="background:white;border-radius:34px;padding:24px;width:min(430px,94vw);text-align:center;box-shadow:0 18px 45px rgba(0,0,0,0.3);">' +
+                        '<div id="oral-cert-capture" style="background:white;padding:26px;border:10px solid #F0E68C;border-radius:28px;">' +
+                            '<div style="font-size:4.5rem;margin-bottom:10px;">🏅</div>' +
+                            '<h2 style="font-size:1.8rem;color:#2D5A27;margin:0 0 6px 0;font-weight:900;">Achievement Award</h2>' +
+                            '<h3 style="font-size:1.2rem;color:#D2691E;margin:0 0 24px 0;">Chinese Oral Test</h3>' +
+                            '<div style="border-top:2px dashed #F0E68C;border-bottom:2px dashed #F0E68C;padding:24px 0;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;">' +
+                                '<span style="color:#94a3b8;font-size:0.8rem;font-weight:bold;letter-spacing:1px;">FINAL SCORE</span>' +
+                                '<span id="oral-res-score" style="font-size:3rem;font-weight:900;color:#7FB069;"></span>' +
+                            '</div>' +
+                            '<div id="oral-res-date" style="color:#94a3b8;font-size:0.75rem;letter-spacing:1px;"></div>' +
+                        '</div>' +
+
+                        '<button id="oral-btn-save" class="btn-common" style="width:100%;background:#7FB069;margin-top:20px;padding:14px;font-size:1.1rem;">SAVE REPORT IMAGE</button>' +
+                        '<button id="oral-btn-close-report" class="btn-common btn-outline" style="width:100%;margin-top:10px;padding:12px;">Back to Game Select</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        const oralContainer = document.getElementById('oral-test-container');
+
+        const style = document.createElement('style');
+        style.textContent =
+            '@media (max-width: 900px) {' +
+                '#oral-main-layout { grid-template-columns:1fr !important; grid-template-rows:1fr 1fr !important; }' +
+            '}' +
+            '.oral-word-card { background:white;padding:16px 10px;border-radius:22px;border:4px solid #F0E68C;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:135px;transition:all 0.2s;position:relative;text-align:center; }' +
+            '.oral-word-card:hover { transform:translateY(-3px); }' +
+            '.oral-word-card.active { border-color:#D2691E;transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,0.1); }' +
+            '.oral-word-card.done { border-color:#7FB069;background:#F7FFF2; }' +
+            '.oral-word-card.done::after { content:"⭐";position:absolute;top:8px;right:8px;font-size:1.3rem; }';
+        oralContainer.appendChild(style);
+
+        let state = { activeWord: null, attempted: new Set(), isRecording: false };
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let playbackUrl = null;
+        let currentStream = null;
+        let playbackUrlsByWord = {};
+
+        function getItemKey(item) {
+            return String(item.id || item.hanzi || item.en || '');
+        }
+
+        function getItemVisual(item) {
+            if (item.img) {
+                return '<img src="' + item.img + '" style="width:3.2rem;height:3.2rem;object-fit:contain;">';
+            }
+            return '<span style="font-size:3.2rem;line-height:1;">' + (item.emoji || '📝') + '</span>';
+        }
+
+        function renderCards() {
+            const grid = document.getElementById('oral-card-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            for (let i = 0; i < vocabList.length; i++) {
+                const item = vocabList[i];
+                const key = getItemKey(item);
+                const card = document.createElement('div');
+                card.className = 'oral-word-card' +
+                    (state.attempted.has(key) ? ' done' : '') +
+                    (state.activeWord && getItemKey(state.activeWord) === key ? ' active' : '');
+
+                card.innerHTML =
+                    '<div style="font-size:0.9rem;color:#7FB069;font-weight:bold;margin-bottom:5px;">' + (item.pinyin || '') + '</div>' +
+                    '<div style="font-size:1.6rem;color:#2D5A27;font-weight:900;margin-bottom:6px;">' + (item.hanzi || '') + '</div>' +
+                    getItemVisual(item) +
+                    '<div style="font-size:0.8rem;color:var(--primary-color);font-weight:bold;margin-top:5px;">' + (item.en || '') + '</div>';
+
+                card.onclick = function() {
+                    selectWord(item);
+                };
+
+                grid.appendChild(card);
+            }
+        }
+
+        function selectWord(item) {
+            state.activeWord = item;
+
+            document.getElementById('oral-play-back-btn').classList.add('hidden');
+
+            const key = getItemKey(item);
+            if (playbackUrlsByWord[key]) {
+                playbackUrl = playbackUrlsByWord[key];
+                document.getElementById('oral-play-back-btn').classList.remove('hidden');
+            } else {
+                playbackUrl = null;
+            }
+
+            document.getElementById('oral-empty-hint').classList.add('hidden');
+            document.getElementById('oral-active-zone').classList.remove('hidden');
+
+            document.getElementById('oral-display-pinyin').textContent = item.pinyin || '';
+            document.getElementById('oral-display-hanzi').textContent = item.hanzi || '';
+
+            const visualBox = document.getElementById('oral-display-visual');
+            if (item.img) {
+                visualBox.innerHTML = '<img src="' + item.img + '" style="width:6rem;height:6rem;object-fit:contain;">';
+            } else {
+                visualBox.textContent = item.emoji || '📝';
+            }
+
+            document.getElementById('oral-msg-feedback').textContent = '';
+            renderCards();
+            playVocabAudio(item);
+        }
+
+        function markDone() {
+            if (!state.activeWord) return;
+
+            const key = getItemKey(state.activeWord);
+
+            if (!state.attempted.has(key)) {
+                state.attempted.add(key);
+            }
+
+            const score = state.attempted.size;
+            document.getElementById('oral-score-val').textContent = score;
+            document.getElementById('oral-msg-feedback').textContent = 'Excellent! ✨';
+
+            renderCards();
+
+if (score >= vocabList.length) {
+    const finishBtn = document.getElementById('oral-finish-test-btn');
+    if (finishBtn) finishBtn.classList.remove('hidden');
+    document.getElementById('oral-msg-feedback').textContent = 'All done! You can play back, then finish the test.';
+}
+        }
+
+        function showCertificate() {
+            document.getElementById('oral-res-score').textContent = state.attempted.size + ' / ' + vocabList.length;
+
+            try {
+                const options = { day: '2-digit', month: 'long', year: 'numeric' };
+                document.getElementById('oral-res-date').textContent = new Date().toLocaleDateString('en-GB', options);
+            } catch(e) {
+                document.getElementById('oral-res-date').textContent = new Date().toDateString();
+            }
+
+            document.getElementById('oral-cert-modal').style.display = 'flex';
+        }
+
+        function cleanupOralTest() {
+            try {
+                if (state.isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            } catch(e) {}
+
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                for (let i = 0; i < tracks.length; i++) {
+                    tracks[i].stop();
+                }
+                currentStream = null;
+            }
+
+            for (let key in playbackUrlsByWord) {
+                if (playbackUrlsByWord.hasOwnProperty(key) && playbackUrlsByWord[key]) {
+                    URL.revokeObjectURL(playbackUrlsByWord[key]);
+                }
+            }
+
+            playbackUrlsByWord = {};
+            playbackUrl = null;
+        }
+
+        document.getElementById('oral-auth-back-btn').onclick = function() {
+            cleanupOralTest();
+            onExit();
+        };
+
+        document.getElementById('oral-btn-back').onclick = function() {
+            cleanupOralTest();
+            onExit();
+        };
+
+        document.getElementById('oral-confirm-auth-btn').onclick = async function() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Microphone recording is not supported in this browser.');
+                    return;
+                }
+
+                currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(currentStream);
+
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = function() {
+                    const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                    const audioBlob = new Blob(audioChunks, { type: mimeType });
+
+                    playbackUrl = URL.createObjectURL(audioBlob);
+
+                    if (state.activeWord) {
+                        const key = getItemKey(state.activeWord);
+                        if (playbackUrlsByWord[key]) {
+                            URL.revokeObjectURL(playbackUrlsByWord[key]);
+                        }
+                        playbackUrlsByWord[key] = playbackUrl;
+                    }
+
+                    document.getElementById('oral-play-back-btn').classList.remove('hidden');
+                    markDone();
+                };
+
+                document.getElementById('oral-auth-overlay').style.display = 'none';
+                renderCards();
+            } catch (err) {
+                alert('Please allow microphone access to proceed.');
+            }
+        };
+
+        document.getElementById('oral-mic-trigger').onclick = function() {
+            if (!state.activeWord || !mediaRecorder) return;
+
+            const micBtn = document.getElementById('oral-mic-trigger');
+
+            if (!state.isRecording) {
+                state.isRecording = true;
+                audioChunks = [];
+                mediaRecorder.start();
+                micBtn.style.background = '#81C784';
+                micBtn.style.transform = 'scale(1.06)';
+                document.getElementById('oral-msg-feedback').textContent = 'Recording... 🎤';
+            } else {
+                state.isRecording = false;
+                mediaRecorder.stop();
+                micBtn.style.background = '#E57373';
+                micBtn.style.transform = 'scale(1)';
+                document.getElementById('oral-msg-feedback').textContent = 'Saved. You can play it back.';
+            }
+        };
+
+        document.getElementById('oral-play-back-btn').onclick = function() {
+            if (playbackUrl) {
+                new Audio(playbackUrl).play();
+            }
+        };
+
+document.getElementById('oral-finish-test-btn').onclick = function() {
+    showCertificate();
+};
+
+        document.getElementById('oral-btn-close-report').onclick = function() {
+            cleanupOralTest();
+            onExit();
+        };
+
+        document.getElementById('oral-btn-save').onclick = function() {
+            const btn = document.getElementById('oral-btn-save');
+
+            if (typeof html2canvas === 'undefined') {
+                alert('html2canvas is not loaded. Please check the script in <head>.');
+                return;
+            }
+
+            btn.textContent = 'GENERATING...';
+
+            html2canvas(document.getElementById('oral-cert-capture'), { scale: 2 }).then(function(canvas) {
+                const link = document.createElement('a');
+                link.download = 'Oral_Test_Report.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                btn.textContent = 'SAVE REPORT IMAGE';
+            }).catch(function() {
+                btn.textContent = 'SAVE REPORT IMAGE';
+                alert('Could not generate the report image.');
+            });
+        };
+
+        renderCards();
     }
 
     // Archery
