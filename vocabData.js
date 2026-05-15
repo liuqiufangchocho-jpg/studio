@@ -184,7 +184,7 @@ const CATEGORIES = {
     ]
   },
   weather: {
-    id: 'weather_and_sky', name: '天气', nameEn: 'Weather and Sky', icon: '🌦️',
+    id: 'weather_and_seasons', name: '天气', nameEn: 'Weather and Seasons', icon: '🌦️',
     items: [
       { id: 'sunny', hanzi: '晴天', pinyin: 'qíng tiān', emoji: '☀️', en: 'sunny', isCore: true, isCCG: true },
      { id: 'rainy', hanzi: '下雨', pinyin: 'xià yǔ', emoji: '🌧️', en: 'rainy', isCore: true, isCCG: true },
@@ -200,7 +200,7 @@ const CATEGORIES = {
       { id: 'umbrella', hanzi: '雨伞', pinyin: 'yǔ sǎn', emoji: '☔', en: 'umbrella', isCore: true, isCCG: true },
       { id: 'weather_word', hanzi: '天气', pinyin: 'tiān qì', emoji: '🌦️', en: 'weather', isCore: true, isCCG: false },
       { id: 'spring', hanzi: '春天', pinyin: 'chūn tiān', emoji: '🌼', en: 'spring', isCore: false, isCCG: true },
-      { id: 'summer', hanzi: '夏天', pinyin: 'xià tiān', emoji: '🍦', en: 'summer', isCore: false, isCCG: true },
+      { id: 'summer', hanzi: '夏天', pinyin: 'xià tiān', emoji: '🍹', en: 'summer', isCore: false, isCCG: true },
       { id: 'autumn', hanzi: '秋天', pinyin: 'qiū tiān', emoji: '🍂', en: 'autumn', isCore: false, isCCG: true },
       { id: 'winter', hanzi: '冬天', pinyin: 'dōng tiān', emoji: '☃️', en: 'winter', isCore: false, isCCG: true },
       { id: 'sky', hanzi: '天空', pinyin: 'tiān kōng', emoji: '🌌', en: 'sky', isCore: false, isCCG: true },
@@ -376,7 +376,7 @@ const CATEGORIES = {
       { id: 'foot', hanzi: '脚', pinyin: 'jiǎo', emoji: '🦶', en: 'foot', isCore: true, isCCG: true },
       { id: 'leg', hanzi: '腿', pinyin: 'tuǐ', emoji: '🦵', en: 'leg', isCore: true, isCCG: true },
       { id: 'shoulder', hanzi: '肩膀', pinyin: 'jiān bǎng', emoji: '💪', img: './shoulder.png', en: 'shoulder', isCore: true, isCCG: true },
-      { id: 'knee', hanzi: '膝盖', pinyin: 'xī gài', emoji: '🦵', en: 'knee', isCore: true, isCCG: true },
+      { id: 'knee', hanzi: '膝盖', pinyin: 'xī gài', emoji: '🦵', img: './knee.png', en: 'knee', isCore: true, isCCG: true },
       { id: 'arm', hanzi: '胳膊', pinyin: 'gē bo', emoji: '💪', en: 'arm', isCore: true, isCCG: true }
     ]
   },
@@ -518,6 +518,14 @@ const CATEGORIES = {
       { id: 'lebanon_con', hanzi: '黎巴嫩', pinyin: 'lí bā nèn', emoji: '🇱🇧', img: './Lebanon.png', en: 'Lebanon', isCore: false, isCCG: true },
       { id: 'japan_con', hanzi: '日本', pinyin: 'rì běn', emoji: '🇯🇵', img: './Japan.png', en: 'Japan', isCore: true, isCCG: true },
       { id: 'qatar_con', hanzi: '卡塔尔', pinyin: 'kǎ tǎ ěr', emoji: '🇶🇦', img: './Qatar.png', en: 'Qatar', isCore: false, isCCG: true }
+    ]
+  },
+  Customized: {
+    id: 'Customized_Words', name: '定制词', nameEn: 'Customized Words', icon: '🎇',
+    items: [
+      { id: 'jigsaw_puzzle', hanzi: '拼图', pinyin: 'pīn tú', emoji: '🧩', en: 'jigsaw puzzle', isCore: false, isCCG: true },
+      { id: 'blocks', hanzi: '积木', pinyin: 'jī mù', emoji: '🧱', img: './blocks.png', en: 'blocks', isCore: false, isCCG: true },
+      { id: 'doll', hanzi: '娃娃', pinyin: 'wá wa', emoji: '🪆', en: 'doll', isCore: false, isCCG: true }
     ]
   }
 };
